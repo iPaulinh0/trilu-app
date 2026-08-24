@@ -14,8 +14,7 @@ export function Logo({ className, height = 28 }: LogoProps) {
       alt="Trilu"
       height={height}
       width={height * 4}
-      className={cn("h-auto w-auto object-contain", className)}
-      style={{ height }}
+      className={cn(className)}
       priority
     />
   );

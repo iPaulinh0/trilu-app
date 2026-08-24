@@ -53,21 +53,28 @@ function Button({
   children,
   ...props
 }: ButtonProps) {
-  const Comp = asChild ? Slot.Root : "button";
+  const sharedProps = {
+    "data-slot": "button",
+    "data-variant": variant,
+    "data-size": size,
+    className: cn(buttonVariants({ variant, size, block, className })),
+    disabled: disabled || loading,
+    "aria-busy": loading || undefined,
+    ...props,
+  };
+
+  if (asChild) {
+    // Slot requires exactly one child element — loading/icon injection only
+    // makes sense when Button renders its own <button>, so asChild callers
+    // (e.g. AlertDialogAction) get their child passed through untouched.
+    return <Slot.Root {...sharedProps}>{children}</Slot.Root>;
+  }
 
   return (
-    <Comp
-      data-slot="button"
-      data-variant={variant}
-      data-size={size}
-      className={cn(buttonVariants({ variant, size, block, className }))}
-      disabled={disabled || loading}
-      aria-busy={loading || undefined}
-      {...props}
-    >
+    <button {...sharedProps}>
       {loading ? <Loader2Icon className="size-4 animate-spin" aria-hidden /> : null}
       {children}
-    </Comp>
+    </button>
   );
 }
 

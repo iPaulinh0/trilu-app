@@ -7,8 +7,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { loginSchema, type LoginFormValues } from "../domain/schema";
-import { AuthError, type AuthUser } from "../domain/types";
-import { authService } from "@/lib/services";
+import { AuthError } from "../domain/types";
+import { authService, resolvePostAuthPath, authSessionStorage } from "@/lib/services";
+import { invalidateCurrentUserCache } from "../hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +20,6 @@ import { Logo } from "@/components/shared/logo";
 export function LoginForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const [loggedInUser, setLoggedInUser] = useState<AuthUser | null>(null);
 
   const {
     register,
@@ -33,8 +33,10 @@ export function LoginForm() {
   const onSubmit = async (values: LoginFormValues) => {
     try {
       const { user } = await authService.login(values);
+      authSessionStorage.save(user);
+      invalidateCurrentUserCache();
       toast.success("Login realizado com sucesso!");
-      setLoggedInUser(user);
+      router.push(resolvePostAuthPath(user.id));
     } catch (error) {
       if (error instanceof AuthError) {
         toast.error(error.message);
@@ -43,18 +45,6 @@ export function LoginForm() {
       }
     }
   };
-
-  if (loggedInUser) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-        <Mascot size={140} priority />
-        <h1 className="text-2xl font-bold text-ink-900">Que bom ter você de volta, {loggedInUser.name}!</h1>
-        <p className="text-base leading-relaxed text-ink-700">
-          Sua conta está pronta. As próximas etapas da sua trilha chegam em breve.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="flex flex-1 flex-col">
