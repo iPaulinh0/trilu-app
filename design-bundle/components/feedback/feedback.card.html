@@ -1,0 +1,32 @@
+<!-- @dsCard group="Components" viewport="700x640" name="Feedback" subtitle="ProgressBar, Toast, Tooltip, Dialog" -->
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css"><style>body{margin:0;padding:20px;background:var(--surface-app);font:var(--type-body)}.grp{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:14px}.lbl{font:var(--type-label);letter-spacing:.08em;text-transform:uppercase;color:var(--text-subtle);width:100%;margin-bottom:2px}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { ProgressBar, Toast, Tooltip, Dialog, Button } = window.TriluDesignSystem_9e1798;
+const Ico=({n,s=20,c='currentColor'})=>{const r=React.useRef(null);React.useEffect(()=>{const d=window.lucide.icons[n];if(d&&r.current)r.current.innerHTML=window.lucide.createElement(d).outerHTML;},[n]);return <span ref={r} style={{display:'inline-flex',width:s,height:s,color:c}} data-s={s}/>;};
+
+function Demo(){return <div>
+<div className="grp" style={{flexDirection:'column',alignItems:'stretch'}}><span className="lbl">ProgressBar</span>
+<ProgressBar value={3} max={4} tone="coral" label="Marco de 7 dias" valueLabel="3 de 4 passos"/>
+<ProgressBar value={100} tone="mint" size="sm" style={{marginTop:10}}/>
+<ProgressBar value={45} tone="violet" size="lg" style={{marginTop:10}}/>
+</div>
+<div className="grp" style={{alignItems:'flex-start'}}><span className="lbl">Toast</span>
+<Toast tone="celebrate" title="Boa! Você avançou mais um marco." icon={<Ico n="PartyPopper"/>}/>
+<Toast tone="success" title="Série registrada" message="32 kg • 10 repetições" icon={<Ico n="Check"/>}/>
+</div>
+<div className="grp"><span className="lbl">Tooltip</span>
+<Tooltip content="Recorde anterior: 32 kg"><Button variant="outline" size="sm">Passe o mouse</Button></Tooltip>
+</div>
+<div className="grp"><span className="lbl">Dialog — bottom sheet</span>
+<div style={{position:'relative',width:300,height:190,borderRadius:'var(--radius-lg)',overflow:'hidden',background:'var(--ink-100)'}}>
+<Dialog title="Encerrar treino?" footer={<><Button variant="outline" block>Voltar</Button><Button variant="accent" block>Encerrar</Button></>}>Seu progresso de hoje fica salvo.</Dialog>
+</div></div></div>;}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

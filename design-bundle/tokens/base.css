@@ -1,0 +1,6 @@
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;font:var(--type-body);color:var(--text-body);background:var(--surface-app);-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--font-display);color:var(--text-title);margin:0;letter-spacing:var(--tracking-tight)}
+a{color:var(--text-brand);text-decoration:none;font-weight:var(--weight-semibold)}
+a:hover{color:var(--violet-700);text-decoration:underline}
+:focus-visible{outline:none;box-shadow:var(--ring-focus);border-radius:var(--radius-sm)}

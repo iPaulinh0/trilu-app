@@ -1,0 +1,31 @@
+<!-- @dsCard group="Components" viewport="700x420" name="Forms" subtitle="Input, Select, Checkbox, Radio, Switch" -->
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css"><style>body{margin:0;padding:20px;background:var(--surface-app);font:var(--type-body)}.grp{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:14px}.lbl{font:var(--type-label);letter-spacing:.08em;text-transform:uppercase;color:var(--text-subtle);width:100%;margin-bottom:2px}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { Input, Select, Checkbox, Radio, Switch } = window.TriluDesignSystem_9e1798;
+const Ico=({n,s=20,c='currentColor'})=>{const r=React.useRef(null);React.useEffect(()=>{const d=window.lucide.icons[n];if(d&&r.current)r.current.innerHTML=window.lucide.createElement(d).outerHTML;},[n]);return <span ref={r} style={{display:'inline-flex',width:s,height:s,color:c}} data-s={s}/>;};
+
+function Demo(){const[c,setC]=React.useState(true),[s,setS]=React.useState(true),[r,setR]=React.useState('voltar');return <div>
+<div className="grp" style={{alignItems:'flex-start'}}>
+<div style={{flex:1}}><Input label="Carga" defaultValue="32" suffix={<span style={{color:'var(--text-muted)',fontWeight:700}}>kg</span>}/></div>
+<div style={{flex:1}}><Input label="E-mail" defaultValue="paulo@" error="E-mail incompleto"/></div>
+<div style={{flex:1}}><Select label="Objetivo" options={[{value:'a',label:'Voltar à rotina'},{value:'b',label:'Ganhar força'}]}/></div>
+</div>
+<div className="grp"><span className="lbl">Checkbox · Switch</span>
+<Checkbox label="Beber 2 L de água" checked={c} onChange={e=>setC(e.target.checked)}/>
+<Checkbox label="Alongar 5 min"/>
+<Checkbox label="Indisponível" disabled/>
+<Switch label="Lembrete diário" checked={s} onChange={e=>setS(e.target.checked)}/>
+</div>
+<div className="grp" style={{alignItems:'stretch'}}><span className="lbl">Radio cards</span>
+<Radio name="g" style={{flex:1}} label="Voltar à rotina" description="2 treinos por semana" checked={r==='voltar'} onChange={()=>setR('voltar')}/>
+<Radio name="g" style={{flex:1}} label="Competir comigo" description="4 treinos por semana" checked={r==='comp'} onChange={()=>setR('comp')}/>
+</div></div>;}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

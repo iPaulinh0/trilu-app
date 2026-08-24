@@ -1,0 +1,36 @@
+<!-- @dsCard group="Components" viewport="700x740" name="Journey" subtitle="TrailPath, MilestoneChip, StreakRow, MascotBubble, StatTile, ExerciseRow" -->
+<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css"><style>body{margin:0;padding:20px;background:var(--surface-app);font:var(--type-body)}.grp{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:14px}.lbl{font:var(--type-label);letter-spacing:.08em;text-transform:uppercase;color:var(--text-subtle);width:100%;margin-bottom:2px}</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="../../_ds_bundle.js"></script>
+<script src="https://unpkg.com/lucide@0.454.0/dist/umd/lucide.js"></script>
+</head><body><div id="root"></div>
+<script type="text/babel">
+const { TrailPath, MilestoneChip, StreakRow, MascotBubble, StatTile, ExerciseRow } = window.TriluDesignSystem_9e1798;
+const Ico=({n,s=20,c='currentColor'})=>{const r=React.useRef(null);React.useEffect(()=>{const d=window.lucide.icons[n];if(d&&r.current)r.current.innerHTML=window.lucide.createElement(d).outerHTML;},[n]);return <span ref={r} style={{display:'inline-flex',width:s,height:s,color:c}} data-s={s}/>;};
+
+function Demo(){return <div>
+<div className="grp" style={{flexDirection:'column',alignItems:'stretch'}}><span className="lbl">TrailPath</span>
+<TrailPath width={620} currentIndex={2} avatarSrc="../../assets/mascot-tilu.png" milestones={[{label:'Início'},{label:'7 dias'},{label:'Recorde'},{label:'30 dias'},{label:'Meta'}]}/>
+</div>
+<div className="grp"><span className="lbl">MilestoneChip</span>
+<MilestoneChip state="done" label="Início" caption="12 mai"/>
+<MilestoneChip state="current" label="Marco de 7 dias" caption="Faltam 2 passos"/>
+<MilestoneChip state="goal" label="Meta" caption="30 dias"/>
+<MilestoneChip state="locked" label="Recorde"/>
+</div>
+<div className="grp" style={{alignItems:'flex-start'}}><span className="lbl">StreakRow · StatTile</span>
+<div style={{width:260}}><StreakRow days={['done','done','rest','done','today','empty','empty']}/></div>
+<StatTile value="12" unit="dias" label="Sequência" tone="mint" icon={<Ico n="Flame"/>}/>
+<StatTile value="32" unit="kg" label="Recorde supino" tone="coral" icon={<Ico n="Trophy"/>}/>
+</div>
+<div className="grp" style={{alignItems:'flex-start'}}><span className="lbl">MascotBubble · ExerciseRow</span>
+<MascotBubble mascotSrc="../../assets/mascot-tilu.png" size={80} message="Hoje conta, mesmo que seja mais leve."/>
+<div style={{flex:1,minWidth:250,display:'flex',flexDirection:'column',gap:8}}>
+<ExerciseRow name="Supino reto" detail="3 séries de 10 • 32 kg" setsDone={2} setsTotal={3}/>
+<ExerciseRow name="Crucifixo" detail="3 séries de 12 • 14 kg" done/>
+</div></div></div>;}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Demo/>);
+</script></body></html>

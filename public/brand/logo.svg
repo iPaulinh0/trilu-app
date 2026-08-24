@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 300">
+  
+  <g transform="translate(50 50)">
+    <rect width="200" height="200" rx="50" fill="#5B43D6"></rect>
+    <path d="M46 150 C72 132,60 92,98 80 C122 70,138 58,152 44" fill="none" stroke="#fff" stroke-width="17" stroke-linecap="round"></path>
+    <circle cx="46" cy="150" r="11" fill="#35C99A"></circle><circle cx="154" cy="42" r="15" fill="#FF7258"></circle>
+  </g>
+  <text x="285" y="185" fill="#17213B" font-family="Sora, Nunito Sans, Arial, sans-serif" font-size="145" font-weight="800" letter-spacing="4">TRILU</text>
+</svg>
