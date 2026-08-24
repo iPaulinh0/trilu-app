@@ -4,8 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { SettingsIcon, ChevronRightIcon, LogOutIcon } from "lucide-react";
 import { useProfile } from "../hooks/use-profile";
-import { profileRepository, authSessionStorage } from "@/lib/services";
-import { invalidateCurrentUserCache } from "@/features/auth/hooks/use-current-user";
+import { profileRepository } from "@/lib/services";
 import { ProfileAvatar } from "./profile-avatar";
 import { EditProfileSheet } from "./edit-profile-sheet";
 import { SettingsSheet } from "./settings-sheet";
@@ -45,17 +44,18 @@ export function ProfileScreen() {
     );
   }
 
+  const currentEmail = profile.email;
+
   async function handleUpdateProfile(values: ProfileFormValues) {
+    const emailChanged = values.email !== currentEmail;
     try {
       await profileRepository.updateProfile(values);
-      // Keeps the Home header's greeting/avatar (sourced from the session)
-      // in sync with the freshly-edited name, without Home depending on the
-      // profile repository directly.
-      const session = authSessionStorage.load();
-      if (session) authSessionStorage.save({ ...session, name: values.name, email: values.email });
-      invalidateCurrentUserCache();
       await reload();
-      toast.success("Perfil atualizado com sucesso.");
+      toast.success(
+        emailChanged
+          ? "Perfil atualizado. Confirme o novo e-mail para concluir a troca."
+          : "Perfil atualizado com sucesso.",
+      );
     } catch {
       toast.error("Não foi possível atualizar seu perfil agora.");
       throw new Error("update-profile-failed");

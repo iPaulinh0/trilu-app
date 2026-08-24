@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { loginSchema, type LoginFormValues } from "../domain/schema";
 import { AuthError } from "../domain/types";
-import { authService, resolvePostAuthPath, authSessionStorage } from "@/lib/services";
-import { invalidateCurrentUserCache } from "../hooks/use-current-user";
+import { sanitizeNextPath } from "../domain/sanitize-next";
+import { authService, pendingEmailStorage, resolvePostAuthPath } from "@/lib/services";
+import { SocialAuthButtons } from "./social-auth-buttons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,7 +20,16 @@ import { Logo } from "@/components/shared/logo";
 
 export function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [showPassword, setShowPassword] = useState(false);
+  const hasShownOAuthError = useRef(false);
+
+  useEffect(() => {
+    if (searchParams.get("error") === "oauth" && !hasShownOAuthError.current) {
+      hasShownOAuthError.current = true;
+      toast.error("Não foi possível concluir o login. Tente novamente.");
+    }
+  }, [searchParams]);
 
   const {
     register,
@@ -32,17 +42,22 @@ export function LoginForm() {
 
   const onSubmit = async (values: LoginFormValues) => {
     try {
-      const { user } = await authService.login(values);
-      authSessionStorage.save(user);
-      invalidateCurrentUserCache();
+      await authService.signInWithPassword(values);
       toast.success("Login realizado com sucesso!");
-      router.push(resolvePostAuthPath(user.id));
+      const next = sanitizeNextPath(searchParams.get("next"));
+      router.push(next ?? (await resolvePostAuthPath()));
     } catch (error) {
-      if (error instanceof AuthError) {
-        toast.error(error.message);
-      } else {
-        toast.error("Serviço indisponível no momento. Tente novamente em instantes.");
+      if (error instanceof AuthError && error.code === "emailNotConfirmed") {
+        pendingEmailStorage.save(values.email);
+        toast.info("Confirme seu e-mail para continuar. Reenviamos o código se precisar.");
+        router.push("/confirmar-email");
+        return;
       }
+      toast.error(
+        error instanceof AuthError
+          ? error.message
+          : "Serviço indisponível no momento. Tente novamente em instantes.",
+      );
     }
   };
 
@@ -57,7 +72,7 @@ export function LoginForm() {
         <h1 className="text-2xl font-bold text-ink-900">Que bom ter você de volta!</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 flex flex-col gap-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 flex flex-col gap-4" noValidate>
         <div className="flex flex-col gap-2">
           <Label htmlFor="email">E-mail</Label>
           <Input
@@ -67,6 +82,7 @@ export function LoginForm() {
             placeholder="voce@exemplo.com"
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? "email-error" : undefined}
+            disabled={isSubmitting}
             {...register("email")}
           />
           <FieldError id="email-error" message={errors.email?.message} />
@@ -82,6 +98,7 @@ export function LoginForm() {
               className="pr-12"
               aria-invalid={!!errors.password}
               aria-describedby={errors.password ? "password-error" : undefined}
+              disabled={isSubmitting}
               {...register("password")}
             />
             <button
@@ -96,7 +113,7 @@ export function LoginForm() {
           <FieldError id="password-error" message={errors.password?.message} />
           <button
             type="button"
-            onClick={() => toast.info("Em breve você poderá recuperar sua senha por aqui.")}
+            onClick={() => router.push("/esqueci-senha")}
             className="self-start text-sm font-bold text-violet-600 hover:underline"
           >
             Esqueci minha senha
@@ -108,8 +125,12 @@ export function LoginForm() {
         </Button>
       </form>
 
+      <div className="mt-6">
+        <SocialAuthButtons disabled={isSubmitting} />
+      </div>
+
       <p className="mt-6 text-center text-sm text-ink-500">
-        Ainda não tem conta?{" "}
+        Ainda não tenho uma conta?{" "}
         <button
           type="button"
           onClick={() => router.push("/onboarding")}

@@ -1,44 +1,45 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { authSessionStorage } from "@/lib/services";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import type { AuthUser } from "../domain/types";
 
 /**
- * Distinguishes "haven't read localStorage yet" (SSR / first paint) from
- * "read it, nobody's logged in" — both would otherwise collapse to `null`
+ * Distinguishes "haven't heard from Supabase yet" (first paint) from
+ * "checked, nobody's logged in" — both would otherwise collapse to `null`
  * and make redirect guards fire one render too early.
  */
 const UNLOADED = Symbol("unloaded");
 type UserSnapshot = AuthUser | null | typeof UNLOADED;
 
-let cached: UserSnapshot = UNLOADED;
-
-function getSnapshot(): UserSnapshot {
-  if (cached === UNLOADED) cached = authSessionStorage.load();
-  return cached;
-}
-
-function getServerSnapshot(): UserSnapshot {
-  return UNLOADED;
-}
-
-function subscribe(): () => void {
-  return () => {};
+function toAuthUser(user: { id: string; email?: string | null; user_metadata?: Record<string, unknown> | null }): AuthUser {
+  const fullName = user.user_metadata?.full_name;
+  return { id: user.id, name: typeof fullName === "string" ? fullName : "", email: user.email ?? "" };
 }
 
 /**
- * Reads the current auth session without a setState-in-effect hydration
- * dance. `isHydrated` is false for exactly one render (SSR + first client
- * paint); guard effects should wait for it before redirecting.
+ * Reactive client-side auth state, subscribed directly to Supabase's own
+ * `onAuthStateChange` — not routed through AuthService, whose interface
+ * models imperative actions (sign in/out/up), not state subscription.
+ *
+ * This is UI state, not an authorization check: it trusts whatever session
+ * Supabase already has cached locally. Anything that actually gates access
+ * to data must re-verify server-side with `getClaims()` (see
+ * src/app/(app)/layout.tsx) — never this hook.
  */
 export function useCurrentUser(): { user: AuthUser | null; isHydrated: boolean } {
-  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const [snapshot, setSnapshot] = useState<UserSnapshot>(UNLOADED);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSnapshot(session?.user ? toAuthUser(session.user) : null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   const isHydrated = snapshot !== UNLOADED;
   return { user: isHydrated ? (snapshot as AuthUser | null) : null, isHydrated };
-}
-
-/** Call after login/signup/logout so already-mounted components see the change. */
-export function invalidateCurrentUserCache(): void {
-  cached = UNLOADED;
 }

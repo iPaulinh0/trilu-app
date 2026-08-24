@@ -8,6 +8,8 @@ export interface UserProfile {
   avatarStorageKey: string | null;
   /** Resolved, display-ready URL for the current avatar — derived at read time, never persisted. */
   avatarUrl: string | null;
+  /** Mirrors `profiles.onboarding_completed` — the redirect gate between onboarding and Home. */
+  onboardingCompleted: boolean;
   createdAt: string;
   updatedAt: string;
 }

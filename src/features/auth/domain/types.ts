@@ -1,4 +1,4 @@
-/** Pure domain types for authentication. No React, no DOM, no Next.js. */
+/** Pure domain types for authentication. No React, no DOM, no Next.js, no Supabase types. */
 
 export interface AuthUser {
   id: string;
@@ -6,32 +6,27 @@ export interface AuthUser {
   email: string;
 }
 
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface SignupInput {
-  name: string;
-  email: string;
-  password: string;
-}
-
-export interface AuthResult {
-  user: AuthUser;
-}
-
 export type AuthErrorCode =
   | "invalidCredentials"
   | "emailAlreadyInUse"
+  | "emailNotConfirmed"
+  | "weakPassword"
+  | "invalidOtp"
+  | "otpExpired"
+  | "rateLimited"
+  | "oauthCancelled"
+  | "oauthProviderNotConfigured"
+  | "sessionExpired"
+  | "noProfile"
   | "unavailable";
 
+/** Portuguese, user-safe message — never the raw Supabase/HTTP error text. */
 export class AuthError extends Error {
   code: AuthErrorCode;
 
   constructor(code: AuthErrorCode, message: string) {
     super(message);
-    this.code = code;
     this.name = "AuthError";
+    this.code = code;
   }
 }

@@ -1,14 +1,37 @@
-import type { AuthResult, LoginCredentials, SignupInput } from "./types";
+import type { AuthUser } from "./types";
+
+export interface SignUpWithEmailInput {
+  name: string;
+  email: string;
+  password: string;
+}
+
+export interface VerifyEmailCodeInput {
+  email: string;
+  code: string;
+}
+
+export interface SignInWithPasswordInput {
+  email: string;
+  password: string;
+}
 
 /**
- * Auth boundary the UI depends on. Today it's backed by an in-memory mock
- * (see data/mock-auth-service.ts); swap the implementation for a real
- * provider (or a React Native-friendly client) without touching any
- * component.
+ * Auth boundary the UI depends on. Backed by Supabase Auth
+ * (see data/supabase-auth-service.ts) via @supabase/ssr, but nothing above
+ * this interface knows that — swapping to a React Native client later means
+ * implementing this same contract against @supabase/supabase-js's
+ * AsyncStorage-backed client, with zero changes to any component.
  */
 export interface AuthService {
-  login(credentials: LoginCredentials): Promise<AuthResult>;
-  signup(input: SignupInput): Promise<AuthResult>;
-  /** Invalidates the session on the auth provider's side (server session/token). */
+  signUpWithEmail(input: SignUpWithEmailInput): Promise<void>;
+  verifyEmailCode(input: VerifyEmailCodeInput): Promise<void>;
+  resendEmailCode(email: string): Promise<void>;
+  signInWithPassword(input: SignInWithPasswordInput): Promise<void>;
+  /** Google only — redirects the browser, so there is nothing to await besides kicking it off. */
+  signInWithGoogle(): Promise<void>;
+  requestPasswordReset(email: string): Promise<void>;
+  updatePassword(password: string): Promise<void>;
   signOut(): Promise<void>;
+  getAuthenticatedUser(): Promise<AuthUser | null>;
 }

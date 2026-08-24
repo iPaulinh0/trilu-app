@@ -1,10 +1,10 @@
 import { createWebKeyValueStorage } from "@/lib/storage/web-kv-storage";
+import { createClient as createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { createOnboardingStorage } from "@/features/onboarding/data/onboarding-storage";
 import { getGoalLabel } from "@/features/onboarding/domain/format";
-import { createMockAuthService } from "@/features/auth/data/mock-auth-service";
+import { createSupabaseAuthService } from "@/features/auth/data/supabase-auth-service";
 import { createUserProfileStorage } from "@/features/auth/data/user-profile-storage";
-import { createSessionStorage } from "@/features/auth/data/session-storage";
-import { createUserProgressStorage } from "@/features/auth/data/user-progress-storage";
+import { createPendingEmailStorage } from "@/features/auth/data/pending-email-storage";
 import { createLocalTrailRepository } from "@/features/trail/data/local-trail-repository";
 import { createLocalHabitRepository } from "@/features/habits/data/local-habit-repository";
 import { createLocalHomeRepository } from "@/features/home/data/local-home-repository";
@@ -13,43 +13,53 @@ import { createUsedExerciseIndex } from "@/features/exercises/data/used-exercise
 import { createHttpExerciseCatalogProvider } from "@/features/exercises/data/http-exercise-catalog-provider";
 import { createLocalWorkoutRepository } from "@/features/workouts/data/local-workout-repository";
 import { createLocalWorkoutSessionRepository } from "@/features/workouts/data/local-workout-session-repository";
-import { createLocalProfileRepository } from "@/features/profile/data/local-profile-repository";
+import { createSupabaseProfileRepository } from "@/features/profile/data/supabase-profile-repository";
 import { createIndexedDbProfileImageStorage } from "@/features/profile/data/indexeddb-profile-image-storage";
+import { createLocalAvatarKeyStorage } from "@/features/profile/data/local-avatar-key-storage";
 import { createLocalPreferencesRepository } from "@/features/profile/data/local-preferences-repository";
 
 /**
  * Composition root for the web app. Every feature depends on interfaces
  * (OnboardingStorage, AuthService, HabitRepository, TrailRepository,
- * HomeRepository…) — only this file knows they're currently backed by
- * localStorage + an in-memory mock. Swapping any of them for a real backend
- * later means changing only this file.
+ * HomeRepository…) — only this file knows most of them are backed by
+ * localStorage, and that auth/profile are backed by Supabase. Swapping any
+ * of them later means changing only this file.
  */
 const webKeyValueStorage = createWebKeyValueStorage();
+const supabase = createSupabaseBrowserClient();
 
 export const onboardingStorage = createOnboardingStorage(webKeyValueStorage);
 export const userProfileStorage = createUserProfileStorage(webKeyValueStorage);
-export const authService = createMockAuthService();
-export const authSessionStorage = createSessionStorage(webKeyValueStorage);
-export const userProgressStorage = createUserProgressStorage(webKeyValueStorage);
+export const pendingEmailStorage = createPendingEmailStorage();
+export const authService = createSupabaseAuthService(supabase);
+
+/**
+ * Mirrors Supabase's own reactive auth state into a value every other
+ * (synchronous) local repository's `getUserId()` can read. This is not a
+ * second session store — no tokens live here, only the id/name/email
+ * Supabase already reports via `onAuthStateChange` — but existing
+ * repositories (habits, workouts, trail, …) call `getUserId()` as a plain
+ * sync function, and rewriting all of them to be async is out of scope for
+ * this auth integration.
+ */
+let currentUserId: string | null = null;
+let currentUserName = "";
+
+supabase.auth.onAuthStateChange((_event, session) => {
+  currentUserId = session?.user?.id ?? null;
+  const fullName = session?.user?.user_metadata?.full_name;
+  currentUserName = typeof fullName === "string" ? fullName : "";
+});
 
 /** Throws when called outside an authenticated route — those must guard first. */
 function getCurrentUserId(): string {
-  const user = authSessionStorage.load();
-  if (!user) throw new Error("Nenhum usuário autenticado.");
-  return user.id;
+  if (!currentUserId) throw new Error("Nenhum usuário autenticado.");
+  return currentUserId;
 }
 
 function getCurrentUserFirstName(): string {
-  const user = authSessionStorage.load();
-  const name = user?.name?.trim();
+  const name = currentUserName.trim();
   return name ? name.split(" ")[0] : "Você";
-}
-
-/** Throws — same contract as getCurrentUserId — when called outside an authenticated route. */
-function getSessionUser() {
-  const user = authSessionStorage.load();
-  if (!user) throw new Error("Nenhum usuário autenticado.");
-  return user;
 }
 
 function getDefaultTrailTitle(): string {
@@ -83,11 +93,10 @@ export const workoutSessionRepository = createLocalWorkoutSessionRepository({
 
 export const profileImageStorage = createIndexedDbProfileImageStorage();
 
-export const profileRepository = createLocalProfileRepository({
-  kv: webKeyValueStorage,
-  getUserId: getCurrentUserId,
-  getSessionUser,
+export const profileRepository = createSupabaseProfileRepository({
+  supabase,
   imageStorage: profileImageStorage,
+  avatarKeyStorage: createLocalAvatarKeyStorage(webKeyValueStorage),
 });
 
 export const preferencesRepository = createLocalPreferencesRepository({
@@ -105,13 +114,20 @@ export const homeRepository = createLocalHomeRepository({
 });
 
 /**
- * Where to send the user right after login/signup: first-run habit setup
- * if they haven't finished it yet, the Home otherwise. Used by both
- * LoginForm and SignupForm so the rule lives in exactly one place.
+ * Where to send the user right after login/signup/OAuth: first-run habit
+ * setup if `profiles.onboarding_completed` is still false, the Home
+ * otherwise. Requires an already-established session (call after
+ * sign-in/verifyOtp/OAuth exchange resolves). Falls back to onboarding —
+ * never Home — if the profile can't be read, since a brand-new user with a
+ * not-yet-visible profile row should never land mid-app.
  */
-export function resolvePostAuthPath(userId: string): string {
-  const progress = userProgressStorage.ensure(userId);
-  return progress.habitSetupCompleted ? "/trilha" : "/configuracao-habitos";
+export async function resolvePostAuthPath(): Promise<string> {
+  try {
+    const profile = await profileRepository.getProfile();
+    return profile.onboardingCompleted ? "/trilha" : "/configuracao-habitos";
+  } catch {
+    return "/configuracao-habitos";
+  }
 }
 
 export const customExerciseRepository = createLocalCustomExerciseRepository({

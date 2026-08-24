@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { HabitSetupScreen } from "@/features/habits/components/habit-setup-screen";
 import { ScreenShell } from "@/components/shared/screen-shell";
-import { habitRepository, userProgressStorage } from "@/lib/services";
+import { habitRepository, profileRepository } from "@/lib/services";
 import { useCurrentUser } from "@/features/auth/hooks/use-current-user";
 import type { CreateHabitInput } from "@/features/habits/domain/types";
 
@@ -17,7 +17,6 @@ export default function ConfiguracaoHabitosPage() {
   }, [isHydrated, user, router]);
 
   if (!isHydrated || !user) return null;
-  const userId = user.id;
 
   async function handleFinish(habits: CreateHabitInput[]) {
     for (const habit of habits) {
@@ -25,12 +24,12 @@ export default function ConfiguracaoHabitosPage() {
       // against what was just persisted, so concurrent writes could race.
       await habitRepository.create(habit);
     }
-    userProgressStorage.setHabitSetupCompleted(userId, true);
+    await profileRepository.markOnboardingCompleted();
     router.push("/trilha");
   }
 
-  function handleSkip() {
-    userProgressStorage.setHabitSetupCompleted(userId, true);
+  async function handleSkip() {
+    await profileRepository.markOnboardingCompleted();
     router.push("/trilha");
   }
 

@@ -3,9 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { authService, authSessionStorage, workoutSessionRepository } from "@/lib/services";
-import { invalidateCurrentUserCache } from "@/features/auth/hooks/use-current-user";
-import { signOut } from "@/features/auth/domain/sign-out";
+import { authService, workoutSessionRepository } from "@/lib/services";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,12 +44,12 @@ export function LogoutDialog({ open, onOpenChange }: LogoutDialogProps) {
     if (isSigningOut) return;
     setIsSigningOut(true);
     try {
-      await signOut({
-        authService,
-        clearSession: () => authSessionStorage.clear(),
-        invalidateCache: invalidateCurrentUserCache,
-      });
+      // Supabase's own signOut clears its session cookie and fires
+      // onAuthStateChange, which every useCurrentUser() subscriber picks up
+      // automatically — no manual local cache to clear.
+      await authService.signOut();
       router.replace("/");
+      router.refresh();
     } catch {
       setIsSigningOut(false);
       toast.error("Não foi possível sair. Tente novamente.");

@@ -5,12 +5,11 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { EyeIcon, EyeOffIcon } from "lucide-react";
+import { CheckCircle2Icon, CircleIcon, EyeIcon, EyeOffIcon } from "lucide-react";
 import { signupSchema, type SignupFormValues } from "../domain/schema";
 import { AuthError } from "../domain/types";
-import { authService, authSessionStorage, resolvePostAuthPath, userProfileStorage } from "@/lib/services";
-import { invalidateCurrentUserCache } from "../hooks/use-current-user";
-import type { OnboardingDraft } from "@/features/onboarding/domain/types";
+import { authService, pendingEmailStorage } from "@/lib/services";
+import { SocialAuthButtons } from "./social-auth-buttons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,13 +17,35 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { FieldError } from "@/components/shared/field-error";
 import { Mascot } from "@/components/shared/mascot";
 import { Logo } from "@/components/shared/logo";
+import { cn } from "@/lib/utils";
 
-interface SignupFormProps {
-  onboardingDraft: OnboardingDraft;
-  onCompleted: () => void;
+function PasswordRequirements({ password }: { password: string }) {
+  const requirements = [
+    { label: "Pelo menos 8 caracteres", met: password.length >= 8 },
+    { label: "Pelo menos uma letra", met: /[A-Za-z]/.test(password) },
+    { label: "Pelo menos um número", met: /\d/.test(password) },
+  ];
+
+  return (
+    <ul className="flex flex-col gap-1" aria-label="Requisitos da senha">
+      {requirements.map((req) => (
+        <li
+          key={req.label}
+          className={cn("flex items-center gap-2 text-xs font-semibold", req.met ? "text-mint-600" : "text-ink-400")}
+        >
+          {req.met ? (
+            <CheckCircle2Icon className="size-3.5 shrink-0" aria-hidden />
+          ) : (
+            <CircleIcon className="size-3.5 shrink-0" aria-hidden />
+          )}
+          {req.label}
+        </li>
+      ))}
+    </ul>
+  );
 }
 
-export function SignupForm({ onboardingDraft, onCompleted }: SignupFormProps) {
+export function SignupForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
 
@@ -32,34 +53,27 @@ export function SignupForm({ onboardingDraft, onCompleted }: SignupFormProps) {
     register,
     control,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: { name: "", email: "", password: "", confirmPassword: "", acceptTerms: false },
   });
 
+  const password = watch("password");
+
   const onSubmit = async (values: SignupFormValues) => {
     try {
-      const { user } = await authService.signup(values);
-      const { currentStep, updatedAt, ...onboardingAnswers } = onboardingDraft;
-      void currentStep;
-      void updatedAt;
-      userProfileStorage.save({
-        user,
-        onboarding: onboardingAnswers,
-        createdAt: new Date().toISOString(),
-      });
-      authSessionStorage.save(user);
-      invalidateCurrentUserCache();
-      toast.success("Conta criada com sucesso!");
-      onCompleted();
-      router.push(resolvePostAuthPath(user.id));
+      await authService.signUpWithEmail(values);
+      pendingEmailStorage.save(values.email);
+      toast.success("Enviamos um código de confirmação para o seu e-mail.");
+      router.push("/confirmar-email");
     } catch (error) {
-      if (error instanceof AuthError) {
-        toast.error(error.message);
-      } else {
-        toast.error("Serviço indisponível no momento. Tente novamente em instantes.");
-      }
+      toast.error(
+        error instanceof AuthError
+          ? error.message
+          : "Serviço indisponível no momento. Tente novamente em instantes.",
+      );
     }
   };
 
@@ -74,7 +88,7 @@ export function SignupForm({ onboardingDraft, onCompleted }: SignupFormProps) {
         <h1 className="text-2xl font-bold text-ink-900">Vamos criar sua conta</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 flex flex-col gap-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="mt-8 flex flex-col gap-4" noValidate>
         <div className="flex flex-col gap-2">
           <Label htmlFor="name">Nome</Label>
           <Input
@@ -83,6 +97,7 @@ export function SignupForm({ onboardingDraft, onCompleted }: SignupFormProps) {
             placeholder="Como podemos te chamar?"
             aria-invalid={!!errors.name}
             aria-describedby={errors.name ? "name-error" : undefined}
+            disabled={isSubmitting}
             {...register("name")}
           />
           <FieldError id="name-error" message={errors.name?.message} />
@@ -97,6 +112,7 @@ export function SignupForm({ onboardingDraft, onCompleted }: SignupFormProps) {
             placeholder="voce@exemplo.com"
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? "email-error" : undefined}
+            disabled={isSubmitting}
             {...register("email")}
           />
           <FieldError id="email-error" message={errors.email?.message} />
@@ -111,7 +127,8 @@ export function SignupForm({ onboardingDraft, onCompleted }: SignupFormProps) {
               autoComplete="new-password"
               className="pr-12"
               aria-invalid={!!errors.password}
-              aria-describedby={errors.password ? "password-error" : undefined}
+              aria-describedby="password-requirements password-error"
+              disabled={isSubmitting}
               {...register("password")}
             />
             <button
@@ -122,6 +139,9 @@ export function SignupForm({ onboardingDraft, onCompleted }: SignupFormProps) {
             >
               {showPassword ? <EyeOffIcon className="size-5" /> : <EyeIcon className="size-5" />}
             </button>
+          </div>
+          <div id="password-requirements">
+            <PasswordRequirements password={password} />
           </div>
           <FieldError id="password-error" message={errors.password?.message} />
         </div>
@@ -134,6 +154,7 @@ export function SignupForm({ onboardingDraft, onCompleted }: SignupFormProps) {
             autoComplete="new-password"
             aria-invalid={!!errors.confirmPassword}
             aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
+            disabled={isSubmitting}
             {...register("confirmPassword")}
           />
           <FieldError id="confirmPassword-error" message={errors.confirmPassword?.message} />
@@ -149,6 +170,7 @@ export function SignupForm({ onboardingDraft, onCompleted }: SignupFormProps) {
                   checked={field.value}
                   onCheckedChange={(checked) => field.onChange(checked === true)}
                   aria-invalid={!!errors.acceptTerms}
+                  disabled={isSubmitting}
                   className="mt-0.5"
                 />
                 Li e aceito os termos de uso e a política de privacidade.
@@ -162,6 +184,17 @@ export function SignupForm({ onboardingDraft, onCompleted }: SignupFormProps) {
           Criar minha conta
         </Button>
       </form>
+
+      <div className="mt-6">
+        <SocialAuthButtons disabled={isSubmitting} />
+      </div>
+
+      <p className="mt-6 text-center text-sm text-ink-500">
+        Já tenho uma conta?{" "}
+        <button type="button" onClick={() => router.push("/login")} className="font-bold text-violet-600 hover:underline">
+          Entrar
+        </button>
+      </p>
     </div>
   );
 }
