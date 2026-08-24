@@ -2,9 +2,11 @@
 
 import { BellIcon } from "lucide-react";
 import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface HomeHeaderProps {
   firstName: string;
+  avatarUrl: string | null;
   nextMilestoneMessage: string;
 }
 
@@ -12,7 +14,7 @@ function getInitial(name: string): string {
   return name.trim().charAt(0).toUpperCase() || "?";
 }
 
-export function HomeHeader({ firstName, nextMilestoneMessage }: HomeHeaderProps) {
+export function HomeHeader({ firstName, avatarUrl, nextMilestoneMessage }: HomeHeaderProps) {
   return (
     <header className="flex items-center justify-between gap-3 py-2">
       <div className="min-w-0">
@@ -28,12 +30,12 @@ export function HomeHeader({ firstName, nextMilestoneMessage }: HomeHeaderProps)
         >
           <BellIcon className="size-5" aria-hidden />
         </button>
-        <span
-          aria-hidden
-          className="flex size-11 items-center justify-center rounded-full bg-violet-500 font-display text-base font-bold text-white"
-        >
-          {getInitial(firstName)}
-        </span>
+        <Avatar className="size-11">
+          {avatarUrl ? <AvatarImage src={avatarUrl} alt={`Foto de perfil de ${firstName}`} /> : null}
+          <AvatarFallback className="bg-violet-500 font-display text-base font-bold text-white" aria-hidden>
+            {getInitial(firstName)}
+          </AvatarFallback>
+        </Avatar>
       </div>
     </header>
   );

@@ -15,6 +15,9 @@ export interface LocalHomeRepositoryDeps {
   trailRepository: TrailRepository;
   getUserFirstName: () => string;
   getWeeklyFrequency: () => number | null;
+  /** True when a workout session is currently open — lets the mission card show "em andamento". */
+  hasActiveWorkoutSession: () => Promise<boolean>;
+  getUserAvatarUrl: () => Promise<string | null>;
 }
 
 export function createLocalHomeRepository({
@@ -22,6 +25,8 @@ export function createLocalHomeRepository({
   trailRepository,
   getUserFirstName,
   getWeeklyFrequency,
+  hasActiveWorkoutSession,
+  getUserAvatarUrl,
 }: LocalHomeRepositoryDeps): HomeRepository {
   return {
     async getHomeSnapshot(dateKey): Promise<HomeSnapshot> {
@@ -32,6 +37,10 @@ export function createLocalHomeRepository({
       const allHabits = await habitRepository.listAll();
       const rangeStart = addDaysToDateKey(dateKey, -(WEEK_WINDOW_DAYS - 1));
       const entriesInRange = await habitRepository.listEntriesForUserBetween(rangeStart, dateKey);
+      const contributions = await trailRepository.listContributionsForGoal(goal.id);
+      const workoutCompletedDateKeys = new Set(
+        contributions.filter((c) => c.sourceType === "workout").map((c) => c.dateKey),
+      );
 
       const entriesToday = entriesInRange.filter((e) => e.dateKey === dateKey);
       const checklist = scheduledToday.map((habit) => ({
@@ -49,12 +58,13 @@ export function createLocalHomeRepository({
         const scheduledHabitsForDay = allHabits.filter((h) => h.isActive && h.scheduledWeekdays.includes(weekday));
         const entriesForDay = entriesInRange.filter((e) => e.dateKey === dk);
         const dayMission = buildMissionState(dk, weeklyFrequency);
+        const workoutCompletedThatDay = workoutCompletedDateKeys.has(dk);
         const activity = buildDailyActivity({
           dateKey: dk,
           scheduledHabits: scheduledHabitsForDay,
           entriesForDay,
           missionScheduled: dayMission.status !== "notConfigured" && dayMission.status !== "restDay",
-          missionCompleted: dayMission.status === "completed",
+          missionCompleted: workoutCompletedThatDay,
         });
 
         if (activity.completedQualifyingAction) qualifyingDateKeys.push(dk);
@@ -75,15 +85,21 @@ export function createLocalHomeRepository({
       }
 
       const streak = calculateStreak({ qualifyingDateKeys, restDateKeys, todayKey: dateKey });
-      const contributions = await trailRepository.listContributionsForGoal(goal.id);
       const lastAchievement = getLastAchievement(goal, contributions);
       const { nextMilestone, stepsRemaining } = getNextMilestone(goal);
 
+      const baseMission = buildMissionState(dateKey, weeklyFrequency);
+      const mission = workoutCompletedDateKeys.has(dateKey)
+        ? { ...baseMission, status: "completed" as const }
+        : baseMission.status === "pending" && (await hasActiveWorkoutSession())
+          ? { ...baseMission, status: "inProgress" as const }
+          : baseMission;
+
       return {
         dateKey,
-        user: { firstName: getUserFirstName() },
+        user: { firstName: getUserFirstName(), avatarUrl: await getUserAvatarUrl() },
         trail: { goal, nextMilestone, stepsRemaining },
-        mission: buildMissionState(dateKey, weeklyFrequency),
+        mission,
         habits: {
           items: checklist,
           pausedHabits: allHabits.filter((h) => !h.isActive),

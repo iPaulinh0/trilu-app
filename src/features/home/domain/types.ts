@@ -18,7 +18,7 @@ export interface WeekDaySummary {
 
 export interface HomeSnapshot {
   dateKey: string;
-  user: { firstName: string };
+  user: { firstName: string; avatarUrl: string | null };
   trail: {
     goal: TrailGoal;
     nextMilestone: number | null;

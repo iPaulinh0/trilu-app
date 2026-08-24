@@ -1,6 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { workoutSessionRepository } from "@/lib/services";
 import { useHomeSnapshot } from "../hooks/use-home-snapshot";
 import { HomeHeader } from "./home-header";
 import { MissionCard } from "./mission-card";
@@ -12,6 +14,7 @@ import { TrailCard } from "@/features/trail/components/trail-card";
 import { HabitChecklistCard } from "@/features/habits/components/habit-checklist-card";
 
 export function HomeScreen() {
+  const router = useRouter();
   const {
     snapshot,
     status,
@@ -35,7 +38,11 @@ export function HomeScreen() {
 
   return (
     <div className="flex flex-col gap-4 py-2">
-      <HomeHeader firstName={snapshot.user.firstName} nextMilestoneMessage={nextMilestoneMessage} />
+      <HomeHeader
+        firstName={snapshot.user.firstName}
+        avatarUrl={snapshot.user.avatarUrl}
+        nextMilestoneMessage={nextMilestoneMessage}
+      />
 
       <TrailCard
         goal={snapshot.trail.goal}
@@ -45,7 +52,15 @@ export function HomeScreen() {
 
       <MissionCard
         mission={snapshot.mission}
-        onStartWorkout={() => toast("Os treinos ainda não estão disponíveis nesta versão.")}
+        onStartWorkout={async () => {
+          const active = await workoutSessionRepository.getActiveSession();
+          if (active) {
+            router.push(`/treinos/sessao/${active.id}`);
+            return;
+          }
+          toast.info("Escolha um treino para começar.");
+          router.push("/treinos");
+        }}
       />
 
       <HabitChecklistCard

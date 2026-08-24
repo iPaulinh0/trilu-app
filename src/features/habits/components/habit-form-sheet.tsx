@@ -7,7 +7,7 @@ import { habitFormSchema, type HabitFormInput, type HabitFormValues } from "../d
 import { CUSTOM_HABIT_ICON_CHOICES, HABIT_COLORS } from "../domain/types";
 import { HabitIcon } from "./habit-icon";
 import { HABIT_COLOR_STYLES } from "./habit-color-styles";
-import { WeekdayPicker } from "./weekday-picker";
+import { WeekdayPicker } from "@/components/shared/weekday-picker";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

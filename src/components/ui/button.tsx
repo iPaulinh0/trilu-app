@@ -16,6 +16,7 @@ const buttonVariants = cva(
         secondary: "border-none bg-violet-50 text-violet-600 hover:bg-violet-100",
         outline: "border-2 border-ink-200 bg-transparent text-ink-900 hover:bg-ink-50",
         ghost: "border-none bg-transparent text-violet-600 hover:bg-violet-50",
+        ghostDestructive: "border-none bg-transparent text-[var(--status-danger)] hover:bg-[var(--status-danger-soft)]",
       },
       size: {
         sm: "h-9 px-4 text-sm",

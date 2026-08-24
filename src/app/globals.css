@@ -279,9 +279,108 @@
 }
 
 .dark {
-  /* This MVP ships light mode only — the brand kit defines no dark palette.
-     Keeping the same values here prevents an unstyled flash for users whose
-     OS is set to dark mode, since @media (prefers-color-scheme) is not used. */
+  /*
+   * Dark palette. The ENTIRE app (every stage, every feature) styles text
+   * and soft-tinted surfaces through the `ink-*`/`violet-*`/`coral-*`/
+   * `mint-*`/`sun-*` ramps directly as Tailwind classes (`text-ink-900`,
+   * `bg-violet-50 text-violet-700`, …) rather than through the semantic
+   * shadcn tokens below — that pattern is already baked into ~30 existing
+   * component files. Rewriting all of them to use `text-foreground` etc.
+   * is out of scope for this stage and would be a much larger, riskier
+   * change than the styling itself.
+   *
+   * So instead of touching components, each ramp is mirrored here: step 50
+   * swaps with 900, 100 with 800, 200 with 700, 300 with 600, 400 with 500
+   * — using the ramp's OWN existing light-mode values, just reassigned.
+   * `ink-900` ("most prominent text") stays the most prominent — it's just
+   * light-on-dark now instead of dark-on-light. `violet-50`/`coral-50`/
+   * `mint-50`/`sun-50` ("soft tinted background") stay the soft background
+   * step, now a dark muted tint instead of a near-white one, and the
+   * `*-600`/`*-700` steps commonly paired with them as text become light
+   * enough to read on that dark tint. This is also exactly how "mint
+   * ajustado para manter contraste" falls out for free: `--text-success`
+   * references `--mint-700`, which is a light mint here instead of a dark
+   * one, with zero extra per-token overrides needed.
+   *
+   * Literal hex (not `var()`) on every line below — referencing another
+   * property being redefined in this same rule would be a circular
+   * custom-property reference and go invalid.
+   */
+  --violet-50: #1c1249;
+  --violet-100: #2a1c6d;
+  --violet-200: #3a2895;
+  --violet-300: #4a34ba;
+  --violet-400: #5b43d6;
+  --violet-500: #7a61de;
+  --violet-600: #9b88e8;
+  --violet-700: #bfb2f1;
+  --violet-800: #ded7f8;
+  --violet-900: #f0edfc;
+
+  --coral-50: #6b2417;
+  --coral-100: #973422;
+  --coral-200: #c34630;
+  --coral-300: #e85b41;
+  --coral-400: #ff7258;
+  --coral-500: #ff8770;
+  --coral-600: #ff9e88;
+  --coral-700: #ffc0b1;
+  --coral-800: #ffded6;
+  --coral-900: #fff1ee;
+
+  --mint-50: #0d4232;
+  --mint-100: #14624a;
+  --mint-200: #1c8464;
+  --mint-300: #26a87f;
+  --mint-400: #35c99a;
+  --mint-500: #4bd0a2;
+  --mint-600: #6dd9b0;
+  --mint-700: #9fe7cb;
+  --mint-800: #cdf3e4;
+  --mint-900: #e9faf3;
+
+  --sun-50: #5c400a;
+  --sun-100: #8a6010;
+  --sun-200: #b98317;
+  --sun-300: #e5a92f;
+  --sun-400: #ffc857;
+  --sun-500: #ffce69;
+  --sun-600: #ffd57c;
+  --sun-700: #ffe3a4;
+  --sun-800: #ffefcb;
+  --sun-900: #fff8e9;
+
+  --ink-50: #17213b;
+  --ink-100: #232f4e;
+  --ink-200: #37456a;
+  --ink-300: #4f5e85;
+  --ink-400: #6c7a9c;
+  --ink-500: #8f9bb7;
+  --ink-600: #b4bdd1;
+  --ink-700: #d5dae6;
+  --ink-800: #e7eaf2;
+  --ink-900: #f6f7fb;
+
+  /* Fundo azul-marinho muito escuro (não preto puro); card um pouco mais claro. */
+  --trilu-cloud: #17213b;
+  --trilu-white: #232f4e;
+  --trilu-ink: #f6f7fb;
+  --trilu-violet: var(--violet-500);
+  --trilu-coral: var(--coral-500);
+  --trilu-mint: var(--mint-500);
+  --trilu-sun: var(--sun-500);
+
+  --status-danger: #ff6b6b;
+  --status-danger-soft: #3a2226;
+
+  /* Navy-tinted shadows read as a colored halo on a dark background — flat black at lower opacity instead. */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-raised: 0 10px 28px rgba(0, 0, 0, 0.45);
+  --shadow-overlay: 0 24px 60px rgba(0, 0, 0, 0.6);
+  --shadow-brand: 0 8px 20px rgba(122, 97, 222, 0.35);
+  --shadow-coral: 0 8px 20px rgba(255, 135, 112, 0.3);
+
   --background: var(--trilu-cloud);
   --foreground: var(--ink-900);
   --card: var(--trilu-white);

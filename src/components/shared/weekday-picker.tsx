@@ -1,4 +1,4 @@
-import { ALL_WEEKDAYS, WEEKDAY_LABELS, type Weekday } from "../domain/types";
+import { ALL_WEEKDAYS, WEEKDAY_LABELS, type Weekday } from "@/lib/weekdays";
 import { cn } from "@/lib/utils";
 
 interface WeekdayPickerProps {

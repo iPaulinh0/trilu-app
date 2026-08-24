@@ -9,4 +9,6 @@ import type { AuthResult, LoginCredentials, SignupInput } from "./types";
 export interface AuthService {
   login(credentials: LoginCredentials): Promise<AuthResult>;
   signup(input: SignupInput): Promise<AuthResult>;
+  /** Invalidates the session on the auth provider's side (server session/token). */
+  signOut(): Promise<void>;
 }

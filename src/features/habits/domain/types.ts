@@ -4,6 +4,9 @@
  * see HabitEntry for that.
  */
 
+export type { Weekday } from "@/lib/weekdays";
+export { ALL_WEEKDAYS, WEEKDAY_LABELS } from "@/lib/weekdays";
+
 export const HABIT_ICON_KEYS = [
   "brain",
   "bookOpen",
@@ -27,18 +30,6 @@ export type HabitIconKey = (typeof HABIT_ICON_KEYS)[number];
 export const HABIT_COLORS = ["violet", "coral", "mint", "sun"] as const;
 export type HabitColor = (typeof HABIT_COLORS)[number];
 
-/** 0 = domingo … 6 = sábado — matches Date#getDay(). */
-export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
-export const ALL_WEEKDAYS: Weekday[] = [0, 1, 2, 3, 4, 5, 6];
-export const WEEKDAY_LABELS: Record<Weekday, string> = {
-  0: "Dom",
-  1: "Seg",
-  2: "Ter",
-  3: "Qua",
-  4: "Qui",
-  5: "Sex",
-  6: "Sáb",
-};
 
 export const MAX_ACTIVE_HABITS = 8;
 export const HABIT_NAME_MIN_LENGTH = 2;

@@ -56,5 +56,13 @@ export function createMockAuthService(): AuthService {
       accounts.set(normalizedEmail, account);
       return { user: { id: account.id, name: account.name, email: account.email } };
     },
+
+    async signOut() {
+      // Nothing to invalidate server-side in this in-memory mock — login
+      // issues no server session/token, just a delay standing in for the
+      // real network round-trip a provider's sign-out call would make. A
+      // real AuthService would revoke the session/refresh token here.
+      await delay(MOCK_NETWORK_DELAY_MS);
+    },
   };
 }
