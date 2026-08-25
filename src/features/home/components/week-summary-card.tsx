@@ -61,7 +61,7 @@ export function WeekSummaryCard({ days, todayKey }: WeekSummaryCardProps) {
                 {day.status === "future"
                   ? "Esse dia ainda não chegou."
                   : day.status === "rest"
-                    ? "Nenhuma ação programada — dia de descanso."
+                    ? "Nenhuma ação programada, dia de descanso."
                     : `${day.stepsEarned} ${day.stepsEarned === 1 ? "passo conquistado" : "passos conquistados"}.`}
               </p>
             </PopoverContent>

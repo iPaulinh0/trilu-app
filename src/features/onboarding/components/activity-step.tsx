@@ -4,6 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { activityLevelStepSchema, type ActivityLevelStepInput } from "../domain/schema";
 import { ACTIVITY_LEVEL_OPTIONS } from "../domain/types";
+import { useStepSubmit } from "../hooks/use-step-submit";
 import { Button } from "@/components/ui/button";
 import { OptionCard } from "@/components/shared/option-card";
 import { FieldError } from "@/components/shared/field-error";
@@ -23,9 +24,10 @@ export function ActivityStep({ defaultValues, onSubmit }: ActivityStepProps) {
     resolver: zodResolver(activityLevelStepSchema),
     defaultValues: { activityLevel: defaultValues.activityLevel },
   });
+  const { isNavigating, handleValidSubmit } = useStepSubmit(onSubmit);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col">
+    <form onSubmit={handleSubmit(handleValidSubmit)} className="flex flex-1 flex-col">
       <h1 className="text-2xl font-bold leading-snug text-ink-900">
         Como é sua rotina de atividade física?
       </h1>
@@ -53,7 +55,7 @@ export function ActivityStep({ defaultValues, onSubmit }: ActivityStepProps) {
       <FieldError message={errors.activityLevel?.message} />
 
       <BottomActionArea>
-        <Button type="submit" variant="accent" size="lg" block>
+        <Button type="submit" variant="accent" size="lg" block loading={isNavigating}>
           Continuar
         </Button>
       </BottomActionArea>

@@ -3,6 +3,7 @@
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { sexForBmrStepSchema, type SexForBmrStepInput } from "../domain/schema";
+import { useStepSubmit } from "../hooks/use-step-submit";
 import { Button } from "@/components/ui/button";
 import { OptionCard } from "@/components/shared/option-card";
 import { FieldError } from "@/components/shared/field-error";
@@ -22,9 +23,10 @@ export function SexReferenceStep({ defaultValues, onSubmit }: SexReferenceStepPr
     resolver: zodResolver(sexForBmrStepSchema),
     defaultValues: { sexForBmr: defaultValues.sexForBmr },
   });
+  const { isNavigating, handleValidSubmit } = useStepSubmit(onSubmit);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col">
+    <form onSubmit={handleSubmit(handleValidSubmit)} className="flex flex-1 flex-col">
       <h1 className="text-2xl font-bold leading-snug text-ink-900">
         Qual referência devemos usar no cálculo?
       </h1>
@@ -58,7 +60,7 @@ export function SexReferenceStep({ defaultValues, onSubmit }: SexReferenceStepPr
       <FieldError message={errors.sexForBmr?.message} />
 
       <BottomActionArea>
-        <Button type="submit" variant="accent" size="lg" block>
+        <Button type="submit" variant="accent" size="lg" block loading={isNavigating}>
           Continuar
         </Button>
       </BottomActionArea>

@@ -3,6 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { heightStepSchema, type HeightStepFormValues, type HeightStepInput } from "../domain/schema";
+import { useStepSubmit } from "../hooks/use-step-submit";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { SuffixedInput } from "@/components/shared/suffixed-input";
@@ -23,9 +24,10 @@ export function HeightStep({ defaultValues, onSubmit }: HeightStepProps) {
     resolver: zodResolver(heightStepSchema),
     defaultValues: { heightCm: defaultValues.heightCm as HeightStepFormValues["heightCm"] },
   });
+  const { isNavigating, handleValidSubmit } = useStepSubmit(onSubmit);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col">
+    <form onSubmit={handleSubmit(handleValidSubmit)} className="flex flex-1 flex-col">
       <h1 className="text-2xl font-bold leading-snug text-ink-900">Qual é a sua altura?</h1>
 
       <div className="mt-6 flex flex-col gap-2">
@@ -45,7 +47,7 @@ export function HeightStep({ defaultValues, onSubmit }: HeightStepProps) {
       </div>
 
       <BottomActionArea>
-        <Button type="submit" variant="accent" size="lg" block>
+        <Button type="submit" variant="accent" size="lg" block loading={isNavigating}>
           Continuar
         </Button>
       </BottomActionArea>

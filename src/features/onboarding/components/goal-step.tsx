@@ -4,6 +4,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { goalStepSchema, type GoalStepInput } from "../domain/schema";
 import { GOAL_OPTIONS } from "../domain/types";
+import { useStepSubmit } from "../hooks/use-step-submit";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,9 +30,10 @@ export function GoalStep({ defaultValues, onSubmit }: GoalStepProps) {
   });
 
   const goal = watch("goal");
+  const { isNavigating, handleValidSubmit } = useStepSubmit(onSubmit);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col">
+    <form onSubmit={handleSubmit(handleValidSubmit)} className="flex flex-1 flex-col">
       <h1 className="text-2xl font-bold leading-snug text-ink-900">
         Qual é o seu próximo objetivo?
       </h1>
@@ -76,7 +78,7 @@ export function GoalStep({ defaultValues, onSubmit }: GoalStepProps) {
       </div>
 
       <BottomActionArea>
-        <Button type="submit" variant="accent" size="lg" block>
+        <Button type="submit" variant="accent" size="lg" block loading={isNavigating}>
           Continuar
         </Button>
       </BottomActionArea>

@@ -42,7 +42,7 @@ export function ExerciseGif({ gifUrl, alt, className }: ExerciseGifProps) {
       <div
         ref={ref}
         role="img"
-        aria-label={`${alt} — sem demonstração em GIF`}
+        aria-label={`${alt}, sem demonstração em GIF`}
         className={cn("flex items-center justify-center bg-violet-50", className)}
       >
         <Mascot size={40} />

@@ -36,7 +36,7 @@ export function ResultStep({ draft, onEdit, onContinue }: ResultStepProps) {
             <h2 className="font-display text-lg font-semibold text-ink-900">Metabolismo basal</h2>
           </div>
           <p className="font-display text-3xl font-extrabold text-ink-900">
-            {bmr !== null ? `${bmr} kcal/dia` : "—"}
+            {bmr !== null ? `${bmr} kcal/dia` : "-"}
           </p>
           <p className="text-sm leading-relaxed text-ink-500">
             Estimativa do que seu corpo utiliza em repouso.
@@ -49,7 +49,7 @@ export function ResultStep({ draft, onEdit, onContinue }: ResultStepProps) {
             <h2 className="font-display text-lg font-semibold text-ink-900">Gasto diário estimado</h2>
           </div>
           <p className="font-display text-3xl font-extrabold text-ink-900">
-            {tdee !== null ? `${tdee} kcal/dia` : "—"}
+            {tdee !== null ? `${tdee} kcal/dia` : "-"}
           </p>
           <p className="text-sm leading-relaxed text-ink-500">
             Estimativa considerando sua rotina de atividade.

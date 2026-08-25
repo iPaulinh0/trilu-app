@@ -92,7 +92,7 @@ export function ExerciseEvolutionChart({ points, isBodyweightOnly }: ExerciseEvo
               summary.percentChange === null ? "text-ink-400" : summary.percentChange >= 0 ? "text-mint-600" : "text-coral-600",
             )}
           >
-            {summary.percentChange === null ? "—" : `${summary.percentChange >= 0 ? "+" : ""}${Math.round(summary.percentChange)}%`}
+            {summary.percentChange === null ? "-" : `${summary.percentChange >= 0 ? "+" : ""}${Math.round(summary.percentChange)}%`}
           </p>
           <p className="text-[11px] font-semibold text-ink-500">Variação</p>
         </div>

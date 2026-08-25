@@ -5,6 +5,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { frequencySelectionSchema, type FrequencySelection } from "../domain/schema";
 import { WEEKLY_FREQUENCY_MAX, WEEKLY_FREQUENCY_MIN } from "../domain/types";
+import { useStepSubmit } from "../hooks/use-step-submit";
 import { Button } from "@/components/ui/button";
 import { NumberChip } from "@/components/shared/number-chip";
 import { FieldError } from "@/components/shared/field-error";
@@ -38,8 +39,9 @@ export function FrequencyStep({ defaultSelection, onSubmit }: FrequencyStepProps
     defaultValues: { selection: defaultSelection },
   });
 
+  const { isNavigating, handleValidSubmit } = useStepSubmit(onSubmit);
   const submit = handleSubmit(({ selection }) => {
-    onSubmit({ weeklyFrequency: selection === "unknown" ? null : Number(selection) });
+    handleValidSubmit({ weeklyFrequency: selection === "unknown" ? null : Number(selection) });
   });
 
   return (
@@ -89,7 +91,7 @@ export function FrequencyStep({ defaultSelection, onSubmit }: FrequencyStepProps
       </div>
 
       <BottomActionArea>
-        <Button type="submit" variant="accent" size="lg" block>
+        <Button type="submit" variant="accent" size="lg" block loading={isNavigating}>
           Continuar
         </Button>
       </BottomActionArea>

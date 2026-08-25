@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { weightStepSchema } from "../domain/schema";
 import { z } from "zod";
+import { useStepSubmit } from "../hooks/use-step-submit";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { SuffixedInput } from "@/components/shared/suffixed-input";
@@ -27,9 +28,10 @@ export function WeightStep({ defaultValue, onSubmit }: WeightStepProps) {
     resolver: zodResolver(weightStepSchema),
     defaultValues: { weightKg: defaultValue != null ? String(defaultValue) : "" },
   });
+  const { isNavigating, handleValidSubmit } = useStepSubmit(onSubmit);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-1 flex-col">
+    <form onSubmit={handleSubmit(handleValidSubmit)} className="flex flex-1 flex-col">
       <h1 className="text-2xl font-bold leading-snug text-ink-900">Qual é o seu peso atual?</h1>
 
       <div className="mt-6 flex flex-col gap-2">
@@ -48,7 +50,7 @@ export function WeightStep({ defaultValue, onSubmit }: WeightStepProps) {
       </div>
 
       <BottomActionArea>
-        <Button type="submit" variant="accent" size="lg" block>
+        <Button type="submit" variant="accent" size="lg" block loading={isNavigating}>
           Continuar
         </Button>
       </BottomActionArea>

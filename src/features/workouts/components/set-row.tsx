@@ -68,7 +68,7 @@ export function SetRow({
       </div>
 
       <label className="flex flex-1 items-center gap-1 text-sm">
-        <span className="sr-only">Peso em quilogramas — {label}</span>
+        <span className="sr-only">Peso em quilogramas, {label}</span>
         <input
           type="text"
           inputMode="decimal"
@@ -82,7 +82,7 @@ export function SetRow({
       </label>
 
       <label className="flex flex-1 items-center gap-1 text-sm">
-        <span className="sr-only">Repetições — {label}</span>
+        <span className="sr-only">Repetições, {label}</span>
         <input
           type="number"
           inputMode="numeric"

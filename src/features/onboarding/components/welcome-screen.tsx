@@ -22,7 +22,7 @@ export function WelcomeScreen() {
             Seu objetivo vira caminho.
           </h1>
           <p className="text-base leading-relaxed text-ink-700">
-            Oi, eu sou o Tilu. Vou te acompanhar em cada passo — no seu ritmo, sem cobrança.
+            Oi, eu sou o Tilu. Vou te acompanhar em cada passo, no seu ritmo, sem cobrança.
           </p>
         </div>
       </div>

@@ -47,6 +47,35 @@ describe("signUpWithEmail", () => {
       { code: "emailAlreadyInUse" },
     );
   });
+
+  it("throws emailAlreadyInUse when Supabase silently no-ops for an already-registered, confirmed email", async () => {
+    // With "Confirm email" on, Supabase returns no error and an obfuscated
+    // user (empty `identities`) instead of erroring, to avoid leaking which
+    // emails already have an account — no confirmation email is sent either.
+    const supabase = createFakeSupabase({
+      signUp: vi.fn().mockResolvedValue({
+        data: { user: { id: "u1", email: "ana@example.com", identities: [] }, session: null },
+        error: null,
+      }),
+    });
+    const service = createSupabaseAuthService(supabase);
+    await expect(
+      service.signUpWithEmail({ name: "Ana", email: "ana@example.com", password: "Senha123" }),
+    ).rejects.toMatchObject({ code: "emailAlreadyInUse" });
+  });
+
+  it("succeeds for a genuinely new signup (identities populated)", async () => {
+    const supabase = createFakeSupabase({
+      signUp: vi.fn().mockResolvedValue({
+        data: { user: { id: "u1", email: "ana@example.com", identities: [{ id: "i1" }] }, session: null },
+        error: null,
+      }),
+    });
+    const service = createSupabaseAuthService(supabase);
+    await expect(
+      service.signUpWithEmail({ name: "Ana", email: "ana@example.com", password: "Senha123" }),
+    ).resolves.toBeUndefined();
+  });
 });
 
 describe("verifyEmailCode", () => {

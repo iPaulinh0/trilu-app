@@ -109,6 +109,7 @@ export function ConfirmEmailForm() {
         <p className="text-sm text-ink-500">
           Enviamos um código de 6 dígitos para <span className="font-bold text-ink-700">{maskEmail(email)}</span>.
         </p>
+        <p className="text-xs text-ink-400">Não encontrou o e-mail? Confira também sua caixa de spam ou lixo eletrônico.</p>
       </div>
 
       <div className="mt-8 flex flex-col gap-4">
