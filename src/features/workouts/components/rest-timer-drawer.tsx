@@ -163,12 +163,16 @@ export function RestTimerDrawer({ open, onOpenChange, timer, onChangeTimer }: Re
           </div>
 
           <div className="flex w-full gap-2">
-            <Button type="button" variant="outline" block onClick={dismiss}>
-              Pular
-            </Button>
-            <Button type="button" variant="ghost" block onClick={dismiss}>
-              Encerrar
-            </Button>
+            <div className="flex-1">
+              <Button type="button" variant="outline" block onClick={dismiss}>
+                Pular
+              </Button>
+            </div>
+            <div className="flex-1">
+              <Button type="button" variant="ghost" block onClick={dismiss}>
+                Encerrar
+              </Button>
+            </div>
           </div>
         </div>
       )}

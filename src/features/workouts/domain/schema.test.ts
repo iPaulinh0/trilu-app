@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { canCompleteSet, setLogFormSchema, workoutTemplateFormSchema } from "./schema";
+import {
+  canCompleteSet,
+  setLogFormSchema,
+  createWorkoutSchema,
+  workoutExerciseSetSchema,
+  workoutExerciseSetCountSchema,
+} from "./schema";
 
 describe("setLogFormSchema", () => {
   it("accepts a comma decimal for weight", () => {
@@ -42,28 +48,72 @@ describe("canCompleteSet", () => {
   });
 });
 
-describe("workoutTemplateFormSchema", () => {
-  const base = { name: "Treino A", muscleGroups: ["chest"] as const };
-
-  it("accepts a minimal valid workout", () => {
-    expect(workoutTemplateFormSchema.safeParse(base).success).toBe(true);
+describe("createWorkoutSchema", () => {
+  it("accepts a simple name", () => {
+    expect(createWorkoutSchema.safeParse({ name: "Treino A" }).success).toBe(true);
   });
 
-  it("rejects a name shorter than 2 characters", () => {
-    expect(workoutTemplateFormSchema.safeParse({ ...base, name: "A" }).success).toBe(false);
+  it("trims leading/trailing whitespace", () => {
+    const result = createWorkoutSchema.safeParse({ name: "  Treino A  " });
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.name).toBe("Treino A");
   });
 
-  it("rejects a name longer than 50 characters", () => {
-    expect(workoutTemplateFormSchema.safeParse({ ...base, name: "a".repeat(51) }).success).toBe(false);
+  it("rejects an empty (whitespace-only) name", () => {
+    expect(createWorkoutSchema.safeParse({ name: "   " }).success).toBe(false);
   });
 
-  it("requires at least one muscle group", () => {
-    expect(workoutTemplateFormSchema.safeParse({ name: "Treino A", muscleGroups: [] }).success).toBe(false);
+  it("rejects a name longer than 60 characters", () => {
+    expect(createWorkoutSchema.safeParse({ name: "a".repeat(61) }).success).toBe(false);
   });
 
-  it("accepts several muscle groups with no upper bound in the schema itself", () => {
-    expect(
-      workoutTemplateFormSchema.safeParse({ name: "Treino A", muscleGroups: ["chest", "back", "shoulders"] }).success,
-    ).toBe(true);
+  it("accepts a single-character name", () => {
+    expect(createWorkoutSchema.safeParse({ name: "A" }).success).toBe(true);
+  });
+
+  it("accepts a 60-character name", () => {
+    expect(createWorkoutSchema.safeParse({ name: "a".repeat(60) }).success).toBe(true);
+  });
+});
+
+describe("workoutExerciseSetSchema", () => {
+  it("accepts a blank weight as null (bodyweight exercises)", () => {
+    const result = workoutExerciseSetSchema.safeParse({ targetWeightKg: "", targetRepetitions: "12" });
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.targetWeightKg).toBeNull();
+  });
+
+  it("accepts a decimal weight", () => {
+    const result = workoutExerciseSetSchema.safeParse({ targetWeightKg: "20,5", targetRepetitions: "10" });
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.targetWeightKg).toBe(20.5);
+  });
+
+  it("rejects a negative weight", () => {
+    expect(workoutExerciseSetSchema.safeParse({ targetWeightKg: "-5", targetRepetitions: "10" }).success).toBe(false);
+  });
+
+  it("rejects zero repetitions", () => {
+    expect(workoutExerciseSetSchema.safeParse({ targetWeightKg: "20", targetRepetitions: "0" }).success).toBe(false);
+  });
+
+  it("rejects a fractional repetition count", () => {
+    expect(workoutExerciseSetSchema.safeParse({ targetWeightKg: "20", targetRepetitions: "8.5" }).success).toBe(false);
+  });
+});
+
+describe("workoutExerciseSetCountSchema", () => {
+  it("accepts values within [1, 20]", () => {
+    expect(workoutExerciseSetCountSchema.safeParse("1").success).toBe(true);
+    expect(workoutExerciseSetCountSchema.safeParse("20").success).toBe(true);
+  });
+
+  it("rejects 0 and negative counts", () => {
+    expect(workoutExerciseSetCountSchema.safeParse("0").success).toBe(false);
+    expect(workoutExerciseSetCountSchema.safeParse("-1").success).toBe(false);
+  });
+
+  it("rejects counts above the technical ceiling", () => {
+    expect(workoutExerciseSetCountSchema.safeParse("21").success).toBe(false);
   });
 });

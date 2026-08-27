@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { addDaysToDateKey, getWeekdayFromDateKey, todayDateKey } from "@/lib/date/local-date";
 import { useTrainingCalendar } from "../hooks/use-training-calendar";
-import { MUSCLE_GROUP_LABELS } from "@/features/exercises/domain/types";
 import { cn } from "@/lib/utils";
 
 const WEEKDAY_SHORT = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
@@ -28,7 +27,7 @@ export function WorkoutCalendarStrip() {
   const [selected, setSelected] = useState(today);
   const { trainingByDate, status } = useTrainingCalendar(days[0], days[days.length - 1]);
 
-  const selectedGroups = trainingByDate.get(selected) ?? [];
+  const selectedWorkoutNames = trainingByDate.get(selected) ?? [];
 
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-ink-100 bg-card p-3">
@@ -64,8 +63,8 @@ export function WorkoutCalendarStrip() {
       <p className="text-center text-xs text-ink-500">
         {status === "loading"
           ? "Carregando…"
-          : selectedGroups.length > 0
-            ? `Treinou: ${selectedGroups.map((g) => MUSCLE_GROUP_LABELS[g]).join(", ")}`
+          : selectedWorkoutNames.length > 0
+            ? `Treinou: ${selectedWorkoutNames.join(", ")}`
             : "Nenhum treino registrado nesse dia."}
       </p>
     </div>

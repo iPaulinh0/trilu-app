@@ -31,10 +31,28 @@ describe("mapExerciseDbItemToCatalogItem", () => {
     expect(item.secondaryMuscleGroups).toEqual(["triceps", "shoulders"]);
   });
 
-  it("capitalizes each word for the display name, keeping the raw name lowercase", () => {
+  it("keeps the raw provider name untouched", () => {
     const item = mapExerciseDbItemToCatalogItem(RAW);
     expect(item.name).toBe("dumbbell bench press");
+  });
+
+  it("uses the pt-BR translation for a known exerciseId", () => {
+    const item = mapExerciseDbItemToCatalogItem(RAW);
+    expect(item.displayName).toBe("Supino reto com halteres");
+  });
+
+  it("falls back to the capitalized English name for an untranslated exerciseId", () => {
+    const item = mapExerciseDbItemToCatalogItem({ ...RAW, exerciseId: "unknown-id-xyz" });
     expect(item.displayName).toBe("Dumbbell Bench Press");
+  });
+
+  it("never lets the translation dictionary affect gifUrl, muscles, equipment, or instructions", () => {
+    const item = mapExerciseDbItemToCatalogItem(RAW);
+    expect(item.gifUrl).toBe(RAW.gifUrl);
+    expect(item.primaryMuscles).toEqual(["pectorals"]);
+    expect(item.secondaryMuscles).toEqual(["triceps", "shoulders"]);
+    expect(item.equipment).toEqual(["dumbbell"]);
+    expect(item.instructions).toEqual(RAW.instructions);
   });
 
   it("never fabricates a gifUrl or instructions when the provider omits them", () => {

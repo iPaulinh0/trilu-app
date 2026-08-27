@@ -1,41 +1,27 @@
 import { z } from "zod";
-import { TRILU_MUSCLE_GROUPS } from "@/features/exercises/domain/types";
 import { parseDecimalInput } from "@/lib/parse-decimal";
-import { WORKOUT_NAME_MAX_LENGTH, WORKOUT_NAME_MIN_LENGTH } from "./types";
+import {
+  WORKOUT_NAME_MAX_LENGTH,
+  WORKOUT_NAME_MIN_LENGTH,
+  WORKOUT_EXERCISE_SET_COUNT_MIN,
+  WORKOUT_EXERCISE_SET_COUNT_MAX,
+  TARGET_WEIGHT_KG_MIN,
+  TARGET_WEIGHT_KG_MAX,
+  TARGET_REPETITIONS_MIN,
+  TARGET_REPETITIONS_MAX,
+} from "./types";
 
-export const workoutTemplateFormSchema = z.object({
+/** Creating a workout only asks for a name — exercises and their sets are added afterward, on the workout's own page. */
+export const createWorkoutSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(WORKOUT_NAME_MIN_LENGTH, `Use pelo menos ${WORKOUT_NAME_MIN_LENGTH} caracteres.`)
+    .min(WORKOUT_NAME_MIN_LENGTH, "Dê um nome para o treino.")
     .max(WORKOUT_NAME_MAX_LENGTH, `Use no máximo ${WORKOUT_NAME_MAX_LENGTH} caracteres.`),
-  description: z
-    .string()
-    .trim()
-    .max(120, "Use no máximo 120 caracteres.")
-    .optional()
-    .transform((v) => (v && v.length > 0 ? v : null)),
-  muscleGroups: z.array(z.enum(TRILU_MUSCLE_GROUPS)).min(1, "Escolha pelo menos um grupo muscular."),
 });
 
-export type WorkoutTemplateFormInput = z.input<typeof workoutTemplateFormSchema>;
-export type WorkoutTemplateFormValues = z.output<typeof workoutTemplateFormSchema>;
-
-export const exerciseConfigSchema = z.object({
-  defaultSets: z.coerce.number().int().min(1, "Pelo menos 1 série.").max(20, "No máximo 20 séries."),
-  targetRepMin: z.coerce.number().int().min(1, "Mínimo de 1 repetição.").max(100),
-  targetRepMax: z.coerce.number().int().min(1).max(100),
-  defaultRestSeconds: z.coerce.number().int().min(0).max(600),
-  notes: z
-    .string()
-    .trim()
-    .max(140, "Use no máximo 140 caracteres.")
-    .optional()
-    .transform((v) => (v && v.length > 0 ? v : null)),
-});
-
-export type ExerciseConfigFormInput = z.input<typeof exerciseConfigSchema>;
-export type ExerciseConfigValues = z.output<typeof exerciseConfigSchema>;
+export type CreateWorkoutFormInput = z.input<typeof createWorkoutSchema>;
+export type CreateWorkoutFormValues = z.output<typeof createWorkoutSchema>;
 
 export const WEIGHT_KG_MIN = 0;
 export const WEIGHT_KG_MAX = 500;
@@ -74,3 +60,37 @@ export type SetLogFormValues = z.output<typeof setLogFormSchema>;
 export function canCompleteSet(repetitions: number): boolean {
   return repetitions >= 1;
 }
+
+/** One planned/target set inside the inline exercise editor — weight is optional (bodyweight exercises), reps are required. */
+export const workoutExerciseSetSchema = z.object({
+  targetWeightKg: z
+    .string()
+    .trim()
+    .transform((raw, ctx) => {
+      if (raw.length === 0) return null;
+      const value = parseDecimalInput(raw);
+      if (value === null) {
+        ctx.addIssue({ code: "custom", message: "Informe um peso válido." });
+        return z.NEVER;
+      }
+      if (value < TARGET_WEIGHT_KG_MIN || value > TARGET_WEIGHT_KG_MAX) {
+        ctx.addIssue({ code: "custom", message: `Use um peso entre ${TARGET_WEIGHT_KG_MIN} e ${TARGET_WEIGHT_KG_MAX} kg.` });
+        return z.NEVER;
+      }
+      return Math.round(value * 100) / 100;
+    }),
+  targetRepetitions: z.coerce
+    .number({ message: "Informe as repetições." })
+    .int("Use um número inteiro de repetições.")
+    .min(TARGET_REPETITIONS_MIN, `Mínimo de ${TARGET_REPETITIONS_MIN} repetição.`)
+    .max(TARGET_REPETITIONS_MAX, `Máximo de ${TARGET_REPETITIONS_MAX} repetições.`),
+});
+
+export type WorkoutExerciseSetFormInput = z.input<typeof workoutExerciseSetSchema>;
+export type WorkoutExerciseSetFormValues = z.output<typeof workoutExerciseSetSchema>;
+
+export const workoutExerciseSetCountSchema = z.coerce
+  .number()
+  .int("Use um número inteiro de séries.")
+  .min(WORKOUT_EXERCISE_SET_COUNT_MIN, `Pelo menos ${WORKOUT_EXERCISE_SET_COUNT_MIN} série.`)
+  .max(WORKOUT_EXERCISE_SET_COUNT_MAX, `No máximo ${WORKOUT_EXERCISE_SET_COUNT_MAX} séries.`);

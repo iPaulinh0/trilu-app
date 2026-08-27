@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { ScreenShell } from "@/components/shared/screen-shell";
 import { TabBar, TAB_BAR_HEIGHT_PX } from "@/components/shared/tab-bar";
+import { ActiveWorkoutSessionBar } from "@/features/workouts/components/active-workout-session-bar";
 
 /**
  * Pure UI shell for the authenticated tabs (Trilha/Treinos/Perfil) — the
@@ -32,6 +33,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </ScreenShell>
       <TabBar />
+      <ActiveWorkoutSessionBar />
     </>
   );
 }

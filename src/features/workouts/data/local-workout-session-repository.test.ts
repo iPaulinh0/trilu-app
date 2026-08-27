@@ -3,6 +3,7 @@ import { createInMemoryKeyValueStorage } from "@/test/in-memory-kv-storage";
 import { createLocalTrailRepository } from "@/features/trail/data/local-trail-repository";
 import { createLocalWorkoutSessionRepository } from "./local-workout-session-repository";
 import { WorkoutSessionConflictError, NoCompletedSetsError, SetIncompleteError } from "../domain/errors";
+import { todayDateKey } from "@/lib/date/local-date";
 import type { StartSessionExerciseSeed } from "../domain/workout-session-repository";
 
 const USER_ID = "user-1";
@@ -195,6 +196,42 @@ describe("completeSession", () => {
   });
 });
 
+describe("deleteCompletedSession", () => {
+  it("removes the session so it no longer shows up in today's summaries", async () => {
+    const { sessionRepository } = setup();
+    const session = await startBasicSession(sessionRepository);
+    const setId = session.exerciseSessions[0].setLogs[0].id;
+    await sessionRepository.updateSet(session.id, setId, { weightKg: 20, repetitions: 10 });
+    await sessionRepository.toggleSetCompleted(session.id, setId);
+    await sessionRepository.completeSession(session.id);
+
+    await sessionRepository.deleteCompletedSession(session.id);
+
+    expect(await sessionRepository.getTodaysWorkoutSummaries(todayDateKey())).toEqual([]);
+    expect(await sessionRepository.getById(session.id)).toBeNull();
+  });
+
+  it("reverts the trail step the session earned — never leaves a dangling contribution", async () => {
+    const { sessionRepository, trailRepository } = setup();
+    const session = await startBasicSession(sessionRepository);
+    const setId = session.exerciseSessions[0].setLogs[0].id;
+    await sessionRepository.updateSet(session.id, setId, { weightKg: 20, repetitions: 10 });
+    await sessionRepository.toggleSetCompleted(session.id, setId);
+    await sessionRepository.completeSession(session.id);
+
+    await sessionRepository.deleteCompletedSession(session.id);
+
+    const goal = await trailRepository.getOrCreateDefaultGoal();
+    expect(goal.currentSteps).toBe(0);
+  });
+
+  it("refuses to delete a session that isn't completed yet", async () => {
+    const { sessionRepository } = setup();
+    const session = await startBasicSession(sessionRepository);
+    await expect(sessionRepository.deleteCompletedSession(session.id)).rejects.toThrow();
+  });
+});
+
 describe("getActiveSession (session recovery)", () => {
   it("finds the in-progress session after a simulated reload (fresh repository instance)", async () => {
     const kv = createInMemoryKeyValueStorage();
@@ -252,6 +289,71 @@ describe("getLastCompletedSessionSummaryForTemplate", () => {
 
     const summary = await sessionRepository.getLastCompletedSessionSummaryForTemplate("tpl-2");
     expect(summary?.exerciseNames).toEqual(["Supino"]);
+  });
+});
+
+describe("getTodaysWorkoutSummaries", () => {
+  it("returns an empty array when nothing was completed on that date", async () => {
+    const { sessionRepository } = setup();
+    expect(await sessionRepository.getTodaysWorkoutSummaries(todayDateKey())).toEqual([]);
+  });
+
+  it("summarizes the completed session with real stats, never fabricated ones", async () => {
+    const { sessionRepository } = setup();
+    const session = await startBasicSession(sessionRepository);
+    const setId = session.exerciseSessions[0].setLogs[0].id;
+    await sessionRepository.updateSet(session.id, setId, { weightKg: 20, repetitions: 10 });
+    await sessionRepository.toggleSetCompleted(session.id, setId);
+    await sessionRepository.completeSession(session.id);
+
+    const summaries = await sessionRepository.getTodaysWorkoutSummaries(todayDateKey());
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0]).toMatchObject({ workoutName: "Treino A", totalReps: 10, totalVolumeKg: 200, exerciseNames: ["Supino"] });
+    expect(summaries[0].durationSeconds).toBeGreaterThan(0);
+  });
+
+  it("excludes exercises with no completed sets from exerciseNames", async () => {
+    const { sessionRepository } = setup();
+    const session = await sessionRepository.startSession("tpl-1", "Treino A", [
+      SUPINO_SEED,
+      { ...SUPINO_SEED, providerExerciseId: "ex-crucifixo", exerciseNameSnapshot: "Crucifixo" },
+    ]);
+    const setId = session.exerciseSessions[0].setLogs[0].id;
+    await sessionRepository.updateSet(session.id, setId, { weightKg: 20, repetitions: 10 });
+    await sessionRepository.toggleSetCompleted(session.id, setId);
+    await sessionRepository.completeSession(session.id);
+
+    const summaries = await sessionRepository.getTodaysWorkoutSummaries(todayDateKey());
+    expect(summaries[0].exerciseNames).toEqual(["Supino"]);
+  });
+
+  it("returns one entry per session completed that day, most recent first", async () => {
+    const { sessionRepository } = setup();
+    const first = await startBasicSession(sessionRepository);
+    await sessionRepository.updateSet(first.id, first.exerciseSessions[0].setLogs[0].id, { weightKg: 20, repetitions: 10 });
+    await sessionRepository.toggleSetCompleted(first.id, first.exerciseSessions[0].setLogs[0].id);
+    await sessionRepository.completeSession(first.id);
+
+    const second = await sessionRepository.startSession("tpl-2", "Treino B", [SUPINO_SEED]);
+    await sessionRepository.updateSet(second.id, second.exerciseSessions[0].setLogs[0].id, { weightKg: 30, repetitions: 5 });
+    await sessionRepository.toggleSetCompleted(second.id, second.exerciseSessions[0].setLogs[0].id);
+    await sessionRepository.completeSession(second.id);
+
+    const summaries = await sessionRepository.getTodaysWorkoutSummaries(todayDateKey());
+    expect(summaries).toHaveLength(2);
+    expect(summaries[0]).toMatchObject({ workoutName: "Treino B", totalReps: 5, totalVolumeKg: 150 });
+    expect(summaries[1]).toMatchObject({ workoutName: "Treino A", totalReps: 10, totalVolumeKg: 200 });
+  });
+
+  it("ignores sessions completed on a different date", async () => {
+    const { sessionRepository } = setup();
+    const session = await startBasicSession(sessionRepository);
+    const setId = session.exerciseSessions[0].setLogs[0].id;
+    await sessionRepository.updateSet(session.id, setId, { weightKg: 20, repetitions: 10 });
+    await sessionRepository.toggleSetCompleted(session.id, setId);
+    await sessionRepository.completeSession(session.id);
+
+    expect(await sessionRepository.getTodaysWorkoutSummaries("2000-01-01")).toEqual([]);
   });
 });
 

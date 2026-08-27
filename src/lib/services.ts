@@ -11,7 +11,7 @@ import { createLocalHomeRepository } from "@/features/home/data/local-home-repos
 import { createLocalCustomExerciseRepository } from "@/features/exercises/data/local-custom-exercise-repository";
 import { createUsedExerciseIndex } from "@/features/exercises/data/used-exercise-index";
 import { createHttpExerciseCatalogProvider } from "@/features/exercises/data/http-exercise-catalog-provider";
-import { createLocalWorkoutRepository } from "@/features/workouts/data/local-workout-repository";
+import { createSupabaseWorkoutRepository } from "@/features/workouts/data/supabase-workout-repository";
 import { createLocalWorkoutSessionRepository } from "@/features/workouts/data/local-workout-session-repository";
 import { createSupabaseProfileRepository } from "@/features/profile/data/supabase-profile-repository";
 import { createIndexedDbProfileImageStorage } from "@/features/profile/data/indexeddb-profile-image-storage";
@@ -148,8 +148,7 @@ export function recordExerciseUsage(item: Parameters<typeof usedExerciseIndex.re
   usedExerciseIndex.record(getCurrentUserId(), item);
 }
 
-export const workoutRepository = createLocalWorkoutRepository({
-  kv: webKeyValueStorage,
-  getUserId: getCurrentUserId,
+export const workoutRepository = createSupabaseWorkoutRepository({
+  supabase,
   getLastExecutionDateKey: (templateId) => workoutSessionRepository.getLastCompletedDateKeyForTemplate(templateId),
 });

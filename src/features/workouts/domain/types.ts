@@ -23,14 +23,31 @@ export interface WorkoutTemplateExercise {
   exerciseSource: ExerciseSource;
   providerExerciseId: string | null;
   customExerciseId: string | null;
-  /** Display-only cache (never a GIF/media URL) so lists don't refetch on every render. */
+  /** Display-only cache so lists don't refetch the catalog on every render. */
   exerciseNameSnapshot: string;
+  muscleGroup: TriluMuscleGroup | null;
+  /** Raw provider equipment key (e.g. "barbell"), translated only in the UI. */
+  equipment: string | null;
+  gifUrl: string | null;
   position: number;
   defaultSets: number;
   targetRepMin: number;
   targetRepMax: number;
   defaultRestSeconds: number;
   notes: string | null;
+  /** Individual planned sets (own weight + reps each) — the source of truth for "Configuração das séries". defaultSets/targetRepMin/targetRepMax above are a derived summary kept for the parts of the app (quick add, session start) that only need a bootstrap count/range. */
+  sets: WorkoutExerciseSet[];
+}
+
+export interface WorkoutExerciseSet {
+  id: string;
+  workoutExerciseId: string;
+  setNumber: number;
+  /** Null means "not set yet" — never fabricated to a number the user didn't enter. */
+  targetWeightKg: number | null;
+  targetRepetitions: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export type WorkoutSessionStatus = "draft" | "in_progress" | "completed" | "cancelled";
@@ -86,8 +103,20 @@ export interface WorkoutSession {
 
 export const REST_PRESETS_SECONDS = [30, 60, 90, 120, 180] as const;
 
-export const WORKOUT_NAME_MIN_LENGTH = 2;
-export const WORKOUT_NAME_MAX_LENGTH = 50;
+export const WORKOUT_NAME_MIN_LENGTH = 1;
+export const WORKOUT_NAME_MAX_LENGTH = 60;
+
+export const WORKOUT_EXERCISE_SET_COUNT_MIN = 1;
+export const WORKOUT_EXERCISE_SET_COUNT_MAX = 20;
+export const TARGET_WEIGHT_KG_MIN = 0;
+export const TARGET_WEIGHT_KG_MAX = 500;
+export const TARGET_REPETITIONS_MIN = 1;
+export const TARGET_REPETITIONS_MAX = 100;
+
+/** Bootstrap values used when an exercise is added to a workout — there's no add-time config form anymore; the user refines sets/carga/descanso afterward, inline on the workout page. */
+export const DEFAULT_SETS_ON_ADD = 3;
+export const DEFAULT_TARGET_REPS_ON_ADD = 12;
+export const DEFAULT_REST_SECONDS_ON_ADD = 60;
 
 /** An exercise identity independent of which session/template it lives in. */
 export interface ExerciseIdentity {

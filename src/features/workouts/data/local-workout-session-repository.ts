@@ -14,6 +14,7 @@ import type {
   ExerciseHistoryEntry,
   LastSessionSummary,
   StartSessionExerciseSeed,
+  TodaysWorkoutSummary,
   WorkoutSessionRepository,
 } from "../domain/workout-session-repository";
 
@@ -315,6 +316,17 @@ export function createLocalWorkoutSessionRepository({
       };
     },
 
+    async deleteCompletedSession(sessionId) {
+      const session = requireSession(sessionId);
+      if (session.status !== "completed") throw new Error("Só é possível excluir treinos já concluídos.");
+
+      const dateKey = toDateKey(new Date(session.completedAt as string));
+      const goal = await trailRepository.getOrCreateDefaultGoal();
+      await trailRepository.revertContribution({ goalId: goal.id, sourceType: "workout", sourceId: sessionId, dateKey });
+
+      sessions.setAll(sessions.getAll().filter((s) => s.id !== sessionId));
+    },
+
     async getLastPerformance(exercise) {
       return findLastPerformance(exercise);
     },
@@ -334,7 +346,11 @@ export function createLocalWorkoutSessionRepository({
       return sessions
         .getAll()
         .filter((s) => s.userId === userId && s.status === "completed" && s.completedAt)
-        .map((s) => ({ dateKey: toDateKey(new Date(s.completedAt as string)), workoutTemplateId: s.workoutTemplateId }))
+        .map((s) => ({
+          dateKey: toDateKey(new Date(s.completedAt as string)),
+          workoutTemplateId: s.workoutTemplateId,
+          workoutNameSnapshot: s.workoutNameSnapshot,
+        }))
         .filter((e) => e.dateKey >= startDateKey && e.dateKey <= endDateKeyInclusive);
     },
 
@@ -359,6 +375,37 @@ export function createLocalWorkoutSessionRepository({
         totalReps: computeSessionTotalReps(allSets),
         totalVolumeKg: computeSessionVolume(allSets),
       };
+    },
+
+    async getTodaysWorkoutSummaries(dateKey): Promise<TodaysWorkoutSummary[]> {
+      const userId = getUserId();
+      return sessions
+        .getAll()
+        .map((s, index) => ({ s, index }))
+        .filter(
+          ({ s }) => s.userId === userId && s.status === "completed" && s.completedAt && toDateKey(new Date(s.completedAt)) === dateKey,
+        )
+        // Ties on completedAt (same millisecond) resolve to whichever was
+        // added later — Array.sort is stable, so on its own it would keep
+        // the earlier one first, the opposite of "most recent first".
+        .sort((a, b) => {
+          const byDate = (b.s.completedAt as string).localeCompare(a.s.completedAt as string);
+          return byDate !== 0 ? byDate : b.index - a.index;
+        })
+        .map(({ s }) => {
+          const allSets = s.exerciseSessions.flatMap((es) => es.setLogs);
+          const exerciseNames = s.exerciseSessions
+            .filter((es) => es.setLogs.some((set) => set.completedAt !== null))
+            .map((es) => es.exerciseNameSnapshot);
+          return {
+            sessionId: s.id,
+            workoutName: s.workoutNameSnapshot,
+            durationSeconds: s.durationSeconds ?? 0,
+            exerciseNames,
+            totalReps: computeSessionTotalReps(allSets),
+            totalVolumeKg: computeSessionVolume(allSets),
+          };
+        });
     },
 
     async listCompletedSessionsForExercise(exercise): Promise<ExerciseHistoryEntry[]> {

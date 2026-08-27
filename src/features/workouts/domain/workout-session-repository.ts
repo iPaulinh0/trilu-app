@@ -27,6 +27,7 @@ export interface ExerciseHistoryEntry {
 export interface TrainingDayEntry {
   dateKey: string;
   workoutTemplateId: string;
+  workoutNameSnapshot: string;
 }
 
 export interface LastSessionSummary {
@@ -34,6 +35,16 @@ export interface LastSessionSummary {
   exerciseNames: string[];
   totalReps: number;
   totalVolumeKg: number;
+}
+
+export interface TodaysWorkoutSummary {
+  sessionId: string;
+  workoutName: string;
+  durationSeconds: number;
+  totalReps: number;
+  totalVolumeKg: number;
+  /** Names of exercises with at least one completed set — never every exercise the session merely listed. */
+  exerciseNames: string[];
 }
 
 export interface CompleteSessionResult {
@@ -72,6 +83,8 @@ export interface WorkoutSessionRepository {
   saveAsDraft(sessionId: string): Promise<void>;
   cancelSession(sessionId: string): Promise<void>;
   completeSession(sessionId: string): Promise<CompleteSessionResult>;
+  /** Removes a completed session and reverts the trail step it earned — never partial, never leaves a dangling contribution. */
+  deleteCompletedSession(sessionId: string): Promise<void>;
 
   getLastPerformance(exercise: ExerciseIdentity): Promise<{ weightKg: number; repetitions: number; dateKey: string } | null>;
   listCompletedSessionsForExercise(exercise: ExerciseIdentity): Promise<ExerciseHistoryEntry[]>;
@@ -79,4 +92,6 @@ export interface WorkoutSessionRepository {
   /** One entry per completed session whose date falls in [startDateKey, endDateKeyInclusive]. */
   getTrainingDaysInRange(startDateKey: string, endDateKeyInclusive: string): Promise<TrainingDayEntry[]>;
   getLastCompletedSessionSummaryForTemplate(workoutTemplateId: string): Promise<LastSessionSummary | null>;
+  /** One entry per session completed on the given date, most recent first. */
+  getTodaysWorkoutSummaries(dateKey: string): Promise<TodaysWorkoutSummary[]>;
 }

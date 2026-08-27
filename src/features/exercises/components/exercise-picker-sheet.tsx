@@ -4,10 +4,8 @@ import { useState } from "react";
 import { SearchIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useExerciseSearch } from "../hooks/use-exercise-search";
-import type { ExerciseConfigValues } from "@/features/workouts/domain/schema";
 import { MUSCLE_GROUP_LABELS, TRILU_MUSCLE_GROUPS, EXERCISE_SEARCH_MIN_LENGTH, type ExerciseCatalogItem, type TriluMuscleGroup } from "../domain/types";
 import { ExerciseResultRow } from "./exercise-result-row";
-import { ExerciseConfigForm } from "./exercise-config-form";
 import { CustomExerciseForm } from "./custom-exercise-form";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { Button } from "@/components/ui/button";
@@ -17,7 +15,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -25,7 +22,6 @@ import {
   Drawer,
   DrawerContent,
   DrawerDescription,
-  DrawerFooter,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
@@ -33,18 +29,24 @@ import { cn } from "@/lib/utils";
 
 export interface AddedExercise {
   exercise: ExerciseCatalogItem;
-  config: ExerciseConfigValues;
 }
 
 interface ExercisePickerSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAdd: (added: AddedExercise) => void;
+  /** Keys ("provider:providerId") already in the target workout — flagged in results and blocked from re-adding. */
+  existingKeys?: Set<string>;
 }
 
-type Phase = { step: "search" } | { step: "configure"; exercise: ExerciseCatalogItem } | { step: "customCreate" };
+type Phase = { step: "search" } | { step: "customCreate" };
 
-export function ExercisePickerSheet({ open, onOpenChange, onAdd }: ExercisePickerSheetProps) {
+/**
+ * Selecting an exercise adds it to the workout immediately — configuring
+ * series/carga/repetições/descanso happens afterward, inline on the
+ * workout's own page, not in a form here.
+ */
+export function ExercisePickerSheet({ open, onOpenChange, onAdd, existingKeys }: ExercisePickerSheetProps) {
   const isDesktop = useMediaQuery("(min-width: 640px)");
   const [phase, setPhase] = useState<Phase>({ step: "search" });
   const { query, setQuery, muscleGroup, setMuscleGroup, items, status, errorMessage, hasMore, loadMore, retry } =
@@ -59,15 +61,16 @@ export function ExercisePickerSheet({ open, onOpenChange, onAdd }: ExercisePicke
     onOpenChange(next);
   }
 
-  function handleConfirmConfig(config: ExerciseConfigValues) {
-    if (phase.step !== "configure") return;
-    onAdd({ exercise: phase.exercise, config });
-    toast.success(`"${phase.exercise.displayName}" adicionado ao treino.`);
-    setPhase({ step: "search" });
+  function selectExercise(exercise: ExerciseCatalogItem) {
+    const key = `${exercise.provider}:${exercise.providerId}`;
+    if (existingKeys?.has(key)) {
+      toast.info(`"${exercise.displayName}" já está neste treino.`);
+      return;
+    }
+    onAdd({ exercise });
   }
 
-  const title =
-    phase.step === "configure" ? "Configurar exercício" : phase.step === "customCreate" ? "Criar exercício" : "Adicionar exercício";
+  const title = phase.step === "customCreate" ? "Criar exercício" : "Adicionar exercício";
 
   const body = (
     <div className="flex flex-col gap-4 px-4 pb-2 sm:px-0">
@@ -127,13 +130,17 @@ export function ExercisePickerSheet({ open, onOpenChange, onAdd }: ExercisePicke
             </div>
           ) : (
             <div className="flex flex-col gap-2">
-              {items.map((item) => (
-                <ExerciseResultRow
-                  key={`${item.provider}:${item.providerId}`}
-                  exercise={item}
-                  onSelect={() => setPhase({ step: "configure", exercise: item })}
-                />
-              ))}
+              {items.map((item) => {
+                const key = `${item.provider}:${item.providerId}`;
+                return (
+                  <ExerciseResultRow
+                    key={key}
+                    exercise={item}
+                    isAlreadyAdded={existingKeys?.has(key) ?? false}
+                    onSelect={() => selectExercise(item)}
+                  />
+                );
+              })}
               {hasMore ? (
                 <Button
                   type="button"
@@ -155,31 +162,11 @@ export function ExercisePickerSheet({ open, onOpenChange, onAdd }: ExercisePicke
             </div>
           )}
         </>
-      ) : phase.step === "configure" ? (
-        <ExerciseConfigForm
-          formId="exercise-config-form"
-          exercise={{
-            displayName: phase.exercise.displayName,
-            gifUrl: phase.exercise.gifUrl,
-            subtitle: MUSCLE_GROUP_LABELS[phase.exercise.primaryMuscleGroup],
-          }}
-          onSubmit={handleConfirmConfig}
-        />
       ) : (
-        <CustomExerciseForm
-          defaultName={query}
-          onCreated={(item) => setPhase({ step: "configure", exercise: item })}
-        />
+        <CustomExerciseForm defaultName={query} onCreated={selectExercise} />
       )}
     </div>
   );
-
-  const footer =
-    phase.step === "configure" ? (
-      <Button type="submit" form="exercise-config-form" variant="accent" size="lg" block>
-        Adicionar ao treino
-      </Button>
-    ) : phase.step === "customCreate" ? null : null;
 
   if (isDesktop) {
     return (
@@ -190,7 +177,6 @@ export function ExercisePickerSheet({ open, onOpenChange, onAdd }: ExercisePicke
             <DialogDescription>Escolha um exercício para adicionar ao seu treino.</DialogDescription>
           </DialogHeader>
           <div className="max-h-[70vh] overflow-y-auto">{body}</div>
-          {footer ? <DialogFooter>{footer}</DialogFooter> : null}
         </DialogContent>
       </Dialog>
     );
@@ -204,7 +190,6 @@ export function ExercisePickerSheet({ open, onOpenChange, onAdd }: ExercisePicke
           <DrawerDescription>Escolha um exercício para adicionar ao seu treino.</DrawerDescription>
         </DrawerHeader>
         <div className="overflow-y-auto">{body}</div>
-        {footer ? <DrawerFooter>{footer}</DrawerFooter> : null}
       </DrawerContent>
     </Drawer>
   );

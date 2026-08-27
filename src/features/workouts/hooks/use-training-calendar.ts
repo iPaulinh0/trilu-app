@@ -1,43 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { workoutRepository, workoutSessionRepository } from "@/lib/services";
-import type { TriluMuscleGroup } from "@/features/exercises/domain/types";
+import { workoutSessionRepository } from "@/lib/services";
 
 type Status = "loading" | "ready" | "error";
 
-/** Muscle groups trained per dateKey, in [startDateKey, endDateKeyInclusive]. */
+/**
+ * Workout names trained per dateKey, in [startDateKey, endDateKeyInclusive].
+ * Derived straight from completed sessions' own name snapshot — never from
+ * the template's muscle groups, since workouts created through the current
+ * (name-only) creation flow never have any.
+ */
 export function useTrainingCalendar(startDateKey: string, endDateKeyInclusive: string) {
-  const [trainingByDate, setTrainingByDate] = useState<Map<string, TriluMuscleGroup[]>>(new Map());
+  const [trainingByDate, setTrainingByDate] = useState<Map<string, string[]>>(new Map());
   const [status, setStatus] = useState<Status>("loading");
 
   useEffect(() => {
     let cancelled = false;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatus("loading");
-    (async () => {
-      try {
-        const entries = await workoutSessionRepository.getTrainingDaysInRange(startDateKey, endDateKeyInclusive);
-        const templateIds = [...new Set(entries.map((e) => e.workoutTemplateId))];
-        const templates = await Promise.all(templateIds.map((id) => workoutRepository.getById(id)));
-        const groupsByTemplateId = new Map<string, TriluMuscleGroup[]>();
-        templates.forEach((data, index) => {
-          if (data) groupsByTemplateId.set(templateIds[index], data.template.muscleGroups);
-        });
-        const map = new Map<string, TriluMuscleGroup[]>();
+    workoutSessionRepository
+      .getTrainingDaysInRange(startDateKey, endDateKeyInclusive)
+      .then((entries) => {
+        if (cancelled) return;
+        const map = new Map<string, string[]>();
         for (const entry of entries) {
-          const groups = groupsByTemplateId.get(entry.workoutTemplateId) ?? [];
           const existing = map.get(entry.dateKey) ?? [];
-          map.set(entry.dateKey, [...new Set([...existing, ...groups])]);
+          if (!existing.includes(entry.workoutNameSnapshot)) existing.push(entry.workoutNameSnapshot);
+          map.set(entry.dateKey, existing);
         }
-        if (!cancelled) {
-          setTrainingByDate(map);
-          setStatus("ready");
-        }
-      } catch {
+        setTrainingByDate(map);
+        setStatus("ready");
+      })
+      .catch(() => {
         if (!cancelled) setStatus("error");
-      }
-    })();
+      });
     return () => {
       cancelled = true;
     };

@@ -1,4 +1,5 @@
 import { classifyExercise } from "../domain/muscle-group-map";
+import { getExerciseDisplayNamePtBr } from "../domain/exercise-name-translations";
 import type { ExerciseCatalogItem } from "../domain/types";
 import type { RawExerciseDbItem } from "./exercisedb-client";
 
@@ -18,11 +19,13 @@ export function mapExerciseDbItemToCatalogItem(raw: RawExerciseDbItem): Exercise
     bodyParts: raw.bodyParts ?? [],
   });
 
+  const fallbackDisplayName = toDisplayName(raw.name);
+
   return {
     providerId: raw.exerciseId,
     provider: "exercisedb",
     name: raw.name,
-    displayName: toDisplayName(raw.name),
+    displayName: getExerciseDisplayNamePtBr(raw.exerciseId, fallbackDisplayName),
     gifUrl: raw.gifUrl ?? null,
     bodyParts: raw.bodyParts ?? [],
     primaryMuscles: raw.targetMuscles ?? [],

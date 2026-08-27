@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeftIcon, ChevronRightIcon, XIcon } from "lucide-react";
+import { ChevronLeftIcon, ChevronRightIcon, ListIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useWorkoutSession } from "../hooks/use-workout-session";
 import { startRestTimer } from "../domain/rest-timer";
@@ -79,6 +79,7 @@ export function WorkoutSessionScreen({ sessionId }: WorkoutSessionScreenProps) {
 
   const exercises = session.exerciseSessions;
   const current = exercises[Math.min(exerciseIndex, exercises.length - 1)];
+  const isLastExercise = exerciseIndex >= exercises.length - 1;
 
   async function handleToggleSet(setLogId: string) {
     const wasCompleted = current.setLogs.find((s) => s.id === setLogId)?.completedAt !== null;
@@ -114,7 +115,14 @@ export function WorkoutSessionScreen({ sessionId }: WorkoutSessionScreenProps) {
             {session.workoutNameSnapshot}
           </span>
         </div>
-        <div className="size-11" aria-hidden />
+        <button
+          type="button"
+          onClick={() => router.push("/treinos")}
+          aria-label="Ver meus treinos (o treino continua em andamento)"
+          className="flex size-11 items-center justify-center rounded-full text-ink-700 hover:bg-ink-50"
+        >
+          <ListIcon className="size-5" aria-hidden />
+        </button>
       </header>
 
       <div className="flex flex-1 flex-col gap-5 overflow-y-auto pb-6">
@@ -153,30 +161,38 @@ export function WorkoutSessionScreen({ sessionId }: WorkoutSessionScreenProps) {
 
       <div className="flex flex-col gap-2 border-t border-ink-100 pt-3">
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            block
-            disabled={exerciseIndex === 0}
-            onClick={() => setExerciseIndex((i) => Math.max(0, i - 1))}
-          >
-            <ChevronLeftIcon className="size-4" aria-hidden />
-            Anterior
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            block
-            disabled={exerciseIndex >= exercises.length - 1}
-            onClick={() => setExerciseIndex((i) => Math.min(exercises.length - 1, i + 1))}
-          >
-            Próximo exercício
-            <ChevronRightIcon className="size-4" aria-hidden />
-          </Button>
+          <div className="flex-1">
+            <Button
+              type="button"
+              variant="outline"
+              block
+              disabled={exerciseIndex === 0}
+              onClick={() => setExerciseIndex((i) => Math.max(0, i - 1))}
+            >
+              <ChevronLeftIcon className="size-4" aria-hidden />
+              Anterior
+            </Button>
+          </div>
+          {!isLastExercise ? (
+            <div className="flex-1">
+              <Button
+                type="button"
+                variant="accent"
+                block
+                onClick={() => setExerciseIndex((i) => Math.min(exercises.length - 1, i + 1))}
+              >
+                Próximo exercício
+                <ChevronRightIcon className="size-4" aria-hidden />
+              </Button>
+            </div>
+          ) : null}
         </div>
-        <Button type="button" variant="accent" size="lg" block onClick={handleComplete}>
-          Concluir treino
-        </Button>
+        {/* Only reachable once every exercise has been stepped through — finishing early (e.g. after just the first exercise) is never offered as the primary action. */}
+        {isLastExercise ? (
+          <Button type="button" variant="accent" size="lg" block onClick={handleComplete}>
+            Concluir treino
+          </Button>
+        ) : null}
       </div>
 
       <ExitSessionDialog

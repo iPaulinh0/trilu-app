@@ -6,9 +6,10 @@ import type { ExerciseCatalogItem } from "../domain/types";
 interface ExerciseResultRowProps {
   exercise: ExerciseCatalogItem;
   onSelect: () => void;
+  isAlreadyAdded?: boolean;
 }
 
-export function ExerciseResultRow({ exercise, onSelect }: ExerciseResultRowProps) {
+export function ExerciseResultRow({ exercise, onSelect, isAlreadyAdded = false }: ExerciseResultRowProps) {
   const equipmentLabel = exercise.equipment[0] ? getEquipmentLabel(exercise.equipment[0]) : null;
 
   return (
@@ -24,11 +25,18 @@ export function ExerciseResultRow({ exercise, onSelect }: ExerciseResultRowProps
           {MUSCLE_GROUP_LABELS[exercise.primaryMuscleGroup]}
           {equipmentLabel ? ` · ${equipmentLabel}` : ""}
         </span>
-        {exercise.isCustom ? (
-          <span className="mt-0.5 inline-block rounded-full bg-coral-50 px-2 py-0.5 text-[10px] font-bold text-coral-600">
-            Personalizado
-          </span>
-        ) : null}
+        <span className="mt-0.5 flex gap-1">
+          {exercise.isCustom ? (
+            <span className="inline-block rounded-full bg-coral-50 px-2 py-0.5 text-[10px] font-bold text-coral-600">
+              Personalizado
+            </span>
+          ) : null}
+          {isAlreadyAdded ? (
+            <span className="inline-block rounded-full bg-mint-50 px-2 py-0.5 text-[10px] font-bold text-mint-700">
+              Já no treino
+            </span>
+          ) : null}
+        </span>
       </span>
     </button>
   );
